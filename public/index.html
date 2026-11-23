@@ -78,11 +78,11 @@ input::placeholder{color:var(--gray)}
 .pn.away{opacity:.55}
 .pn .ps{position:absolute;top:-8px;right:-4px;background:var(--ink);color:var(--lite);font-size:.6rem;font-weight:800;letter-spacing:.08em;padding:1px 4px;text-transform:uppercase}
 /* table */
-.pile{position:relative;width:100%;height:122px}
-.pl{position:absolute;left:50%;top:20px;display:flex}
-.pl .cd2+.cd2{margin-left:-20px}
+.pile{position:relative;width:100%;height:158px}
+.pl{position:absolute;left:50%;top:30px;display:flex}
+.pl .cd2+.cd2{margin-left:-24px}
 .pl.old{filter:brightness(.92)}
-.table{flex:0 0 auto;min-height:120px;border:2px solid var(--ink);background:var(--lite);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;position:relative}
+.table{flex:1 1 auto;min-height:190px;border:2px solid var(--ink);background:var(--lite);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;position:relative}
 .table .big{font-weight:800;font-size:1.05rem}
 .table .hint{font-size:.85rem;color:var(--gray);font-weight:500}
 .play{display:flex;justify-content:center;align-items:center}
@@ -92,16 +92,16 @@ input::placeholder{color:var(--gray)}
 .who{font-family:'Courier Prime','Courier New',monospace;font-weight:700;font-size:.85rem}
 .takes{position:absolute;top:8px;right:8px;padding:3px 8px;border:2px solid var(--rust);color:var(--rust);font-weight:800;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;transform:rotate(4deg);background:var(--lite)}
 /* cards */
-.cd2{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;width:56px;height:80px;padding:3px 4px;border:2px solid #101522;border-radius:5px;background:#FFFFFF;color:#101522;line-height:1;font-weight:800;text-align:left;box-shadow:0 1px 2px rgba(16,21,34,.25),0 4px 8px rgba(16,21,34,.12)}
+.cd2{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;width:62px;height:89px;padding:3px 4px;border:2px solid #101522;border-radius:5px;background:#FFFFFF;color:#101522;line-height:1;font-weight:800;text-align:left;box-shadow:0 1px 2px rgba(16,21,34,.25),0 4px 8px rgba(16,21,34,.12)}
 .cd2.rd{color:var(--red)}
-.cd2 .r{font-size:1.3rem;letter-spacing:-.02em}
-.cd2 .s{font-size:1rem;margin-top:1px}
-.cd2 .bg{position:absolute;right:5px;bottom:5px;font-size:1.6rem}
-.cd2.lg{width:64px;height:92px}
-.cd2.lg .r{font-size:1.5rem}.cd2.lg .bg{font-size:1.9rem}
+.cd2 .r{font-size:1.45rem;letter-spacing:-.02em}
+.cd2 .s{font-size:1.1rem;margin-top:1px}
+.cd2 .bg{position:absolute;right:5px;bottom:5px;font-size:1.8rem}
+.cd2.lg{width:74px;height:106px}
+.cd2.lg .r{font-size:1.75rem}.cd2.lg .s{font-size:1.2rem}.cd2.lg .bg{font-size:2.2rem}
 button.cd2{padding:3px 4px}
-.hand{display:flex;flex-wrap:wrap;justify-content:center;padding:0 10px 4px;min-height:86px}
-.hand .cd2{margin:6px -11px 0;transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s}
+.hand{display:flex;flex-wrap:wrap;justify-content:center;padding:0 12px 4px;min-height:96px}
+.hand .cd2{margin:6px -14px 0;transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s}
 .hand .cd2.sel{transform:translateY(-12px);box-shadow:0 0 0 3px var(--or),0 8px 12px rgba(0,0,0,.3);z-index:2}
 .hand .cd2.dim{opacity:.4}
 @keyframes drop{from{transform:translateY(-16px) scale(1.06);opacity:0}to{transform:none;opacity:1}}
@@ -113,13 +113,13 @@ button.cd2{padding:3px 4px}
 @media (max-height:720px){
   #app{gap:8px;padding-top:calc(10px + env(safe-area-inset-top))}
   .table{min-height:84px;padding:6px;gap:4px}
-  .pile{height:96px}.pl{top:12px}
-  .cd2{width:46px;height:66px}.cd2.lg{width:52px;height:75px}.cd2 .r{font-size:1.05rem}.cd2.lg .r{font-size:1.2rem}.cd2 .bg{font-size:1.3rem}.cd2.lg .bg{font-size:1.5rem}
-  .hand{min-height:70px}.hand .cd2{margin:5px -9px 0}
+  .pile{height:116px}.pl{top:14px}
+  .cd2{width:50px;height:72px}.cd2.lg{width:58px;height:84px}.cd2 .r{font-size:1.1rem}.cd2.lg .r{font-size:1.3rem}.cd2 .bg{font-size:1.4rem}.cd2.lg .bg{font-size:1.6rem}
+  .hand{min-height:76px}.hand .cd2{margin:5px -10px 0}
   .btn{height:48px}.lh{font-size:1.9rem}
   .chart .nd{min-height:32px}
 }
-@media (max-width:340px){.strip{gap:4px}.pn .pc{font-size:.66rem}.pn .pnm{font-size:.78rem}.cd2{width:46px;height:66px}.hand .cd2{margin:5px -10px 0}}
+@media (max-width:340px){.strip{gap:4px}.pn .pc{font-size:.66rem}.pn .pnm{font-size:.78rem}.cd2{width:48px;height:69px}.cd2.lg{width:56px;height:80px}.hand .cd2{margin:5px -11px 0}}
 .acts .btn{flex:1}
 .acts .pri{flex:2}
 /* chat strip + topbar */
@@ -490,7 +490,7 @@ function stripHTML(s){
 }
 
 // The plays of this trick stacked like a pile: the latest on top, the ones before it peeking out underneath
-var PILE_X=[0,-34,32,-60,58],PILE_Y=[0,-9,-7,-15,-13],PILE_R=[0,-6,5,-10,8];
+var PILE_X=[0,-42,40,-76,74],PILE_Y=[0,-11,-8,-20,-17],PILE_R=[0,-6,5,-10,8];
 function pileHTML(plays,fresh){
   var vis=plays.slice(-5),n=vis.length,h='<div class="pile">';
   vis.forEach(function(pl,i){
