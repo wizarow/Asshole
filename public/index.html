@@ -446,7 +446,7 @@ function homeHTML(){
 }
 
 function topBar(s){
-  var sub=s.phase==='lobby'?'Table '+s.code:'Round '+s.round;
+  var sub=s.phase==='lobby'?'Table '+s.code:'Game '+s.round;
   var dot=sess&&!isLocal?' <span class="cd '+conn+'" id="cd" title="Connection"></span><span id="ct">'+(conn==='ok'?'':(conn==='off'?' Offline':' Reconnecting…'))+'</span>':'';
   return '<div class="top"><div><div class="ttl">ASSHOLE</div><div class="rd">'+esc(sub)+dot+'</div></div><div style="display:flex;gap:8px"><button class="ib" data-a="rules" aria-label="How to play">?</button><button class="ib" data-a="settings" aria-label="Settings">Menu</button></div></div>';
 }
@@ -469,8 +469,8 @@ function lobbyHTML(s){
   h+='</div>';
   if(host){
     h+='<div class="sec"><div class="lbl">Seats</div><div class="stepper"><button class="btn" data-a="size" data-d="-1" aria-label="Fewer seats">−</button><span class="v">'+s.n+'</span><button class="btn" data-a="size" data-d="1" aria-label="More seats">+</button><span class="note">'+(s.botCount?plural(s.botCount,'bot')+' will fill the rest':'no bots')+'</span></div></div>';
-    h+='<div class="sec"><label class="chk"><input type="checkbox" data-a="rolesmode"'+(s.rolesMode?' checked':'')+'><span>Start with roles. Choose the titles above; bots take any left over, and the card hand-downs happen in round one.</span></label>'
-      +(s.rolesMode?'<div class="note">'+(s.rolesNeed.length===4?'Titles in play: President, Vice President, Vice Asshole, Asshole.':'Pick the President and the Asshole. The vice titles only apply from 7 players.')+'</div>':'')+'</div>';
+    h+='<div class="sec"><label class="chk"><input type="checkbox" data-a="rolesmode"'+(s.rolesMode?' checked':'')+'><span>Start with roles. Choose the titles above; bots take any left over, and the card swap happens before the first game.</span></label>'
+      +(s.rolesMode?'<div class="note">'+(s.rolesNeed.length===4?'Titles in play: President, Vice President, Vice Asshole, Asshole.':'Pick the President and the Asshole. The vice titles only apply from 6 players.')+'</div>':'')+'</div>';
     h+='<button class="btn pri" data-a="start">Start the game</button>';
   }else{
     h+='<div class="note">Waiting for the host to start. Share the room code so the rest can join.</div>';
@@ -522,11 +522,11 @@ function tableHTML(s){
     var key=s.round+':'+tr.plays.length+':'+last.pid;
     var fresh=key!==lastAnim;lastAnim=key;
     if(s.phase==='trickdone'){
-      h+='<span class="takes">'+(s.roundEnds?'Round over':esc(nameOf(s.trickWinner))+' takes it')+'</span>';
+      h+='<span class="takes">'+(s.roundEnds?'Game over':esc(nameOf(s.trickWinner))+' wins the round')+'</span>';
     }
     h+=pileHTML(tr.plays,fresh);
     h+='<div class="who">'+esc(nameOf(last.pid))+(last.pid===s.me?' (you)':'')+' played '+plural(last.cards.length,'card')+'</div>';
-    if(s.phase==='playing'&&s.turn===s.me)h+='<div class="hint">Beat it with '+plural(tr.count,'card')+' higher than '+E.rankLabel(tr.rank)+', or pass.</div>';
+    if(s.phase==='playing'&&s.turn===s.me)h+='<div class="hint">'+(tr.rank===E.TWO?'Put '+plural(tr.count,'2')+' on top of it, or pass.':'Beat it with '+plural(tr.count,'card')+' higher than '+E.rankLabel(tr.rank)+', or pass.')+'</div>';
     else if(s.phase==='playing')h+='<div class="hint">Next up: '+esc(nameOf(s.turn))+'</div>';
   }else{
     lastAnim='';
@@ -547,7 +547,7 @@ function canUse(s,c){
   if(s.phase==='exchange'){var m=swapMine(s);return !!m&&swapAllowed(s,m,c)}
   if(s.phase!=='playing'||s.turn!==s.me)return false;
   var tr=trickReq(s);if(!tr)return true;
-  var r=E.rankOf(c);if(r<=tr.rank)return false;
+  var r=E.rankOf(c);if(r<=tr.rank&&!(r===E.TWO&&tr.rank===E.TWO))return false;
   return s.hand.filter(function(x){return E.rankOf(x)===r}).length>=tr.count;
 }
 function tapCard(c){
@@ -647,7 +647,7 @@ function exchangeHTML(s){
     var err=open&&sel.length===m.k?E.exchangeError(s.hand,sel,m.k,m.mode):null;
     if(open)h+='<div class="'+(err?'err':'status')+'" role="alert">'+(err?esc(err):(sel.length===m.k?'Looks right. Confirm to swap.':'Pick '+plural(m.k,'card')+' ('+sel.length+' picked)'+(turnDeadline?' <small id="tm"></small>':'')))+'</div>';
     else if(!m.done)h+='<div class="status"><small>Waiting for '+esc(other.name)+' to choose'+(turnDeadline?' <span id="tm"></span>':'')+'</small></div>';
-    if(x.pairs.length>1){h+='<div class="lbl">All swaps this round</div>'+x.pairs.map(function(p){return swapLine(p,s)}).join('')}
+    if(x.pairs.length>1){h+='<div class="lbl">All swaps this game</div>'+x.pairs.map(function(p){return swapLine(p,s)}).join('')}
   }else{
     h+='<p class="note">'+(x.done?'The swap is done.':'The top and bottom of the table are swapping cards. You keep your hand; their cards stay hidden.')+'</p>'+x.pairs.map(function(p){return swapLine(p,s)}).join('');
     if(!x.done&&turnDeadline)h+='<div class="status"><small>Auto-swap in <span id="tm"></span></small></div>';
@@ -667,16 +667,16 @@ function roundHTML(s){
     h+='<div class="verdict"><div class="lbl">Final memo</div><div>Asshole of the night</div><div class="big">'+esc(names(v.asshole)||'Nobody')+'</div>'
       +(v.president.length&&v.president.length<s.players.length?'<div class="note">Most Presidencies: '+esc(names(v.president))+'</div>':'')+'</div>';
   }else{
-    h+='<div class="h2">Memo: restructuring</div><p class="note">Round '+s.round+' is done. New titles, effective immediately.</p>';
+    h+='<div class="h2">Memo: restructuring</div><p class="note">Game '+s.round+' is done. New titles, effective immediately.</p>';
   }
   if(s.order)h+=chartHTML(namedTiers(s.order,s.me));
-  h+='<table class="tl"><thead><tr><th>Name</th><th>Pres</th><th>Ass</th><th>Rounds</th></tr></thead><tbody>'
+  h+='<table class="tl"><thead><tr><th>Name</th><th>Pres</th><th>Ass</th><th>Games</th></tr></thead><tbody>'
     +s.players.slice().sort(function(a,b){return b.tally.president-a.tally.president||a.tally.asshole-b.tally.asshole}).map(function(p){return '<tr><td>'+esc(p.name)+'</td><td>'+p.tally.president+'</td><td>'+p.tally.asshole+'</td><td>'+p.tally.rounds+'</td></tr>'}).join('')+'</tbody></table>';
   if(over){
     h+=host?'<button class="btn pri" data-a="again">Back to the lobby</button>':'<div class="note">Waiting for the host to reset the table.</div>';
     h+='<button class="btn" data-a="leave">Leave table</button>';
   }else{
-    h+='<button class="btn pri" data-a="next">Deal round '+(s.round+1)+'</button>';
+    h+='<button class="btn pri" data-a="next">Deal game '+(s.round+1)+'</button>';
     if(host)h+='<button class="btn" data-a="finish">End the night</button>';
   }
   return h;
@@ -706,13 +706,14 @@ function openModal(kind){
   if(kind==='rules'){
     h='<div class="sheet" role="dialog" aria-label="How to play"><div class="hd"><div class="h2">How to play</div><button class="ib" data-a="close" aria-label="Close">×</button></div>'
     +'<ul class="rules"><li>3 to 8 players, bots fill empty seats. Everyone is dealt the whole deck. The 2 is the highest card, then Ace, King down to 3.</li>'
-    +'<li>The 3 of clubs starts the first round. Lead one card or a set of the same rank (pairs, three, four).</li>'
-    +'<li>Each player then beats it with the same number of cards of a higher rank, or passes. When everyone else passes, the last to play takes the trick and leads.</li>'
-    +'<li>A 2 can’t be beaten, so it ends the trick at once.</li>'
-    +'<li>First out is President, last with cards is the Asshole, everyone in between is a Citizen. With 7 or 8 players the second out is Vice President and the second last is Vice Asshole.</li>'
-    +'<li>When someone goes out and wins the trick, the next player round the table leads. Small numbers next to the names show the order of play.</li>'
-    +'<li>Before the next round there is a card swap. The Asshole hands the President their 2 best cards and the President hands down their 2 lowest (1 card each with 3 players). You pick the cards yourself; the game only accepts the right ones. From 7 players the Vice Asshole and Vice President swap 1 card too. Everyone else watches the swap.</li>'
-    +'<li>The Asshole leads the next round. Host: tick “Start with roles” in the lobby to carry on a game with the titles you pick.</li></ul></div>';
+    +'<li>A game is one deal, played until only one player still has cards. Inside a game you play rounds: one player leads, the others beat it or pass, and whoever is left wins the round and leads the next one.</li>'
+    +'<li>The 3 of clubs starts the first game. Lead one card or a set of the same rank (pairs, three, four).</li>'
+    +'<li>Each player then beats it with the same number of cards of a higher rank, or passes. When everyone else passes, the last to play wins the round and leads.</li>'
+    +'<li>A 2 is the highest card, but it does not win the round by itself: the next player can pass or put another 2 on top. The round is only won when everyone else passes.</li>'
+    +'<li>First out is President, last with cards is the Asshole, everyone in between is a Citizen. With 6 to 8 players the second out is Vice President and the second last is Vice Asshole.</li>'
+    +'<li>When someone goes out and wins the round, the next player along the table leads. Small numbers next to the names show the order of play.</li>'
+    +'<li>Before the next game there is a card swap. The Asshole hands the President their best cards and the President hands down their lowest: 2 cards each with 4 or 5 players, 1 with 3 players. From 6 players it is 3 cards for the President and Asshole, and the Vice Asshole and Vice President swap 2. You pick the cards yourself; the game only accepts the right ones. Everyone else watches the swap.</li>'
+    +'<li>The Asshole leads the next game. Host: tick “Start with roles” in the lobby to carry on a game with the titles you pick.</li></ul></div>';
   }else if(kind==='settings'&&snap){
     var host=amHost();
     h='<div class="sheet" role="dialog" aria-label="Settings"><div class="hd"><div class="h2">Settings</div><button class="ib" data-a="close" aria-label="Close">×</button></div>'

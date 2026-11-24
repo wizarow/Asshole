@@ -29,8 +29,9 @@ t('deck has 52 cards, 2 is highest', () => {
 t('titles by finishing position', () => {
   assert.deepStrictEqual(E.titlesFor(3), ['president', 'citizen', 'asshole']);
   assert.deepStrictEqual(E.titlesFor(4), ['president', 'citizen', 'citizen', 'asshole']);
-  assert.deepStrictEqual(E.titlesFor(6), ['president', 'citizen', 'citizen', 'citizen', 'citizen', 'asshole']);
-  assert.deepStrictEqual(E.titlesFor(7), ['president', 'vp', 'citizen', 'citizen', 'citizen', 'va', 'asshole']);
+  assert.deepStrictEqual(E.titlesFor(5), ['president', 'citizen', 'citizen', 'citizen', 'asshole']);
+  assert.deepStrictEqual(E.titlesFor(6), ['president', 'vp', 'citizen', 'citizen', 'va', 'asshole']);
+  assert.deepStrictEqual(E.titlesFor(7),['president', 'vp', 'citizen', 'citizen', 'citizen', 'va', 'asshole']);
   assert.deepStrictEqual(E.titlesFor(8), ['president', 'vp', 'citizen', 'citizen', 'citizen', 'citizen', 'va', 'asshole']);
 });
 
@@ -43,6 +44,10 @@ t('play rules: one rank, same count, strictly higher', () => {
   assert.ok(E.playError(['S8'], { count: 1, rank: 8 }));            // equal does not beat
   assert.ok(E.playError(['S9', 'H9'], { count: 1, rank: 8 }));      // wrong count
   assert.strictEqual(E.playError(['S15'], { count: 1, rank: 14 }), null);   // 2 beats ace
+  assert.strictEqual(E.playError(['H15'], { count: 1, rank: 15 }), null);   // a 2 can go on a 2
+  assert.strictEqual(E.playError(['H15', 'D15'], { count: 2, rank: 15 }), null);
+  assert.ok(E.playError(['H15'], { count: 2, rank: 15 }), 'a single 2 does not beat a pair of 2s');
+  assert.ok(E.playError(['H14'], { count: 1, rank: 15 }), 'nothing but a 2 beats a 2');
 });
 
 t('lobby: names, host, size, start needs 3', () => {
@@ -69,18 +74,76 @@ t('deal: every card dealt once, 3 of clubs leads first', () => {
   }
 });
 
-t('a 2 clears the trick and the same player leads again', () => {
+t('a 2 does not win the trick by itself: others can pass or put another 2 on top', () => {
   const g = table(3, 3);
   g.act(1, { type: 'start' });
-  const lead = g.players[g.turnIdx];
-  lead.hand = ['S15', 'C4']; g.players[(g.turnIdx + 1) % 3].hand = ['C5', 'C6']; g.players[(g.turnIdx + 2) % 3].hand = ['C7', 'C8'];
-  assert.ok(g.act(lead.id, { type: 'play', cards: ['S15'] }).ok);
-  assert.strictEqual(g.phase, 'trickdone');
-  assert.strictEqual(g.trickWinner, lead.id);
-  g.afterTrick();
+  const i0 = g.turnIdx, a = g.players[i0], b = g.players[(i0 + 1) % 3], c = g.players[(i0 + 2) % 3];
+  a.hand = ['S15', 'C4']; b.hand = ['H15', 'C6']; c.hand = ['C7', 'C8'];
+  assert.ok(g.act(a.id, { type: 'play', cards: ['S15'] }).ok);
+  assert.strictEqual(g.phase, 'playing', 'the trick is still open after a 2');
+  assert.strictEqual(g.players[g.turnIdx].id, b.id);
+  assert.ok(g.act(b.id, { type: 'play', cards: ['H15'] }).ok, 'a 2 on a 2');
   assert.strictEqual(g.phase, 'playing');
-  assert.strictEqual(g.players[g.turnIdx].id, lead.id);
-  assert.strictEqual(g.trick, null);
+  assert.ok(g.act(c.id, { type: 'play', cards: ['C8'] }).err, 'nothing beats a 2 except another 2');
+  assert.ok(g.act(c.id, { type: 'pass' }).ok);
+  assert.strictEqual(g.players[g.turnIdx].id, a.id, 'back round to the first 2');
+  assert.ok(g.act(a.id, { type: 'pass' }).ok);
+  assert.strictEqual(g.phase, 'trickdone');
+  assert.strictEqual(g.trickWinner, b.id, 'won only because everyone else passed');
+  g.afterTrick();
+  assert.strictEqual(g.players[g.turnIdx].id, b.id);
+  g.destroy();
+});
+
+t('a lone 2 that nobody beats wins once everyone passes', () => {
+  const g = table(3, 3);
+  g.act(1, { type: 'start' });
+  const i0 = g.turnIdx, a = g.players[i0], b = g.players[(i0 + 1) % 3], c = g.players[(i0 + 2) % 3];
+  a.hand = ['S15', 'C4']; b.hand = ['C6', 'C9']; c.hand = ['C7', 'C8'];
+  g.act(a.id, { type: 'play', cards: ['S15'] });
+  g.act(b.id, { type: 'pass' }); g.act(c.id, { type: 'pass' });
+  assert.strictEqual(g.phase, 'trickdone');
+  assert.strictEqual(g.trickWinner, a.id);
+  g.destroy();
+});
+
+t('six players: vice titles swap 2 cards, President and Asshole swap 3', () => {
+  const g = table(6, 6);
+  g.act(1, { type: 'start' });
+  const P = g.players.slice();
+  g.prevOrder = P.map(p => p.id);
+  g.titles = {}; E.titlesFor(6).forEach((tt, i) => { g.titles[P[i].id] = tt; });
+  g.phase = 'roundover';
+  g.act(1, { type: 'next' });
+  assert.strictEqual(g.phase, 'exchange');
+  assert.strictEqual(g.pending.length, 2);
+  assert.strictEqual(g.pending[0].k, 3);
+  assert.strictEqual(g.pending[1].k, 2);
+  const va = P[4], vp = P[1];
+  const best1 = E.sortHand(va.hand).slice(-1);
+  assert.ok(g.act(va.id, { type: 'give', cards: best1 }).err, 'one card is not enough from the Vice Asshole');
+  assert.ok(g.act(va.id, { type: 'give', cards: E.sortHand(va.hand).slice(-2) }).ok);
+  assert.ok(g.act(vp.id, { type: 'give', cards: E.sortHand(vp.hand).slice(0, 2) }).ok);
+  assert.strictEqual(g.phase, 'exchange', 'the President and Asshole have not finished');
+  const pres = P[0], ass = P[5];
+  assert.ok(g.act(ass.id, { type: 'give', cards: E.sortHand(ass.hand).slice(-2) }).err, '3 cards from the Asshole');
+  g.act(ass.id, { type: 'give', cards: E.sortHand(ass.hand).slice(-3) });
+  g.act(pres.id, { type: 'give', cards: E.sortHand(pres.hand).slice(0, 3) });
+  assert.strictEqual(g.phase, 'xdone');
+  g.destroy();
+});
+
+t('five players: no vice titles, just President and Asshole swapping 2', () => {
+  const g = table(5, 5);
+  g.act(1, { type: 'start' });
+  const P = g.players.slice();
+  g.prevOrder = P.map(p => p.id);
+  g.titles = {}; E.titlesFor(5).forEach((tt, i) => { g.titles[P[i].id] = tt; });
+  g.phase = 'roundover';
+  g.act(1, { type: 'next' });
+  assert.strictEqual(g.pending.length, 1);
+  assert.strictEqual(g.pending[0].k, 2);
+  assert.ok(!Object.values(g.titles).some(x => x === 'vp' || x === 'va'));
   g.destroy();
 });
 
@@ -215,7 +278,7 @@ t('starting roles: refuses when titles cannot be filled', () => {
   g.act(1, { type: 'setrole', pid: 1, role: 'president' });
   assert.ok(g.act(1, { type: 'start' }).err, 'titles left and no bots to take them');
   assert.ok(g.act(1, { type: 'setrole', pid: 2, role: 'vp' }).ok);
-  assert.ok(g.act(1, { type: 'start' }).err, 'vice titles do not exist below 7 players');
+  assert.ok(g.act(1, { type: 'start' }).err, 'vice titles do not exist below 6 players');
   g.act(1, { type: 'setrole', pid: 2, role: 'citizen' });
   g.act(1, { type: 'setrole', pid: 4, role: 'asshole' });
   assert.ok(g.act(1, { type: 'start' }).ok);

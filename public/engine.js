@@ -34,8 +34,8 @@
   }
 
   // Titles by finishing position. Up to 6 players: President, Citizens, Asshole.
-  // From 7 players the Vice President and Vice Asshole join in.
-  var VICE_FROM = 7;
+  // From 6 players the Vice President and Vice Asshole join in.
+  var VICE_FROM = 6;
   function titlesFor(n) {
     var t = [];
     for (var i = 0; i < n; i++) {
@@ -56,7 +56,8 @@
     for (var i = 1; i < cards.length; i++) if (rankOf(cards[i]) !== r) return 'Play cards of one rank';
     if (trick) {
       if (cards.length !== trick.count) return 'Play ' + trick.count + (trick.count === 1 ? ' card' : ' cards');
-      if (r <= trick.rank) return 'Play higher than ' + rankLabel(trick.rank);
+      // a 2 is the highest card but it does not end the trick: another 2 can still go on top of it
+      if (r <= trick.rank && !(r === TWO && trick.rank === TWO)) return 'Play higher than ' + rankLabel(trick.rank);
     }
     return null;
   }
@@ -88,7 +89,7 @@
         for (i = 0; i < ranks.length; i++) if (ranks[i] !== TWO || ranks.length === 1) return g[ranks[i]].slice();
         return g[ranks[0]].slice();
       }
-      var opts = ranks.filter(function (r) { return r > trick.rank && g[r].length >= trick.count; });
+      var opts = ranks.filter(function (r) { return (r > trick.rank || (r === TWO && trick.rank === TWO)) && g[r].length >= trick.count; });
       if (!opts.length) return null;
       if (level === 'easy' && Math.random() < 0.3) return null;
       var best = null, bs = 1e9;
@@ -419,9 +420,11 @@
     this.finishOrder = []; this.pending = [];
     var self = this;
     if (this.prevOrder) {
-      var order = this.prevOrder, k1 = n >= 4 ? 2 : 1;
+      // Asshole and President swap 3 cards and the vices swap 2 once there are vice titles (6+ players);
+      // with 4 or 5 players it is just the President and Asshole swapping 2, with 3 players 1
+      var order = this.prevOrder, k1 = n >= VICE_FROM ? 3 : (n >= 4 ? 2 : 1);
       var pairs = [{ hi: order[0], lo: order[n - 1], k: k1 }];
-      if (n >= VICE_FROM) pairs.push({ hi: order[1], lo: order[n - 2], k: 1 });
+      if (n >= VICE_FROM) pairs.push({ hi: order[1], lo: order[n - 2], k: 2 });
       pairs.forEach(function (pr) { pr.hiGive = null; pr.loGive = null; pr.done = false; });
       this.pending = pairs;
       this.phase = 'exchange';
@@ -553,7 +556,7 @@
       if (remaining.length === 1) this.finishOrder.push(remaining[0].id);
       return this.holdTrick(p.id, true);
     }
-    var next = rank === TWO ? -1 : this.nextActive(this.turnIdx, null);
+    var next = this.nextActive(this.turnIdx, null);   // a 2 does not win the trick: only everyone else passing does
     if (next < 0) return this.holdTrick(p.id, false);
     this.turnIdx = next;
     this.emit();
