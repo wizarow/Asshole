@@ -12,7 +12,9 @@ html[data-theme=night]{--paper:#11141C;--lite:#1A1F2B;--ink:#E8ECF4;--gray:#A0A7
 html[data-theme=felt]{--paper:#0F3B2D;--lite:#164A39;--ink:#F2EEDF;--gray:#B6C8BC;--or:#E3B94A;--on-or:#10261E;--rust:#FFB08A;--ok:#7BD88A;color-scheme:dark}
 html[data-theme=blue]{--paper:#DCE6FA;--lite:#EEF3FD;--ink:#0E1B4D;--gray:#42507D;--or:#FF6A3D;--on-or:#0E1B4D;--rust:#A93200;--ok:#2E7D32}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{font-size:var(--fs);background:var(--paper)}
+html{font-size:var(--fs);background:var(--paper);overflow-x:hidden}
+img,svg{max-width:100%}
+#app>*{max-width:100%}
 body{margin:0;min-height:100vh;min-height:100dvh;background:var(--paper);color:var(--ink);font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 button,input,select{font:inherit;color:inherit;touch-action:manipulation}
 button{cursor:pointer;border-radius:0}
@@ -100,8 +102,18 @@ input::placeholder{color:var(--gray)}
 .cd2.lg{width:74px;height:106px}
 .cd2.lg .r{font-size:1.75rem}.cd2.lg .s{font-size:1.2rem}.cd2.lg .bg{font-size:2.2rem}
 button.cd2{padding:3px 4px}
-.hand{display:flex;flex-wrap:wrap;justify-content:center;padding:0 12px 4px;min-height:96px}
-.hand .cd2{margin:6px -14px 0;transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s}
+.hand{display:flex;flex-direction:column;align-items:center;padding:12px 0 4px;min-height:96px;max-width:100%}
+.hr{display:flex;justify-content:center;max-width:100%}
+.hand .cd2{width:var(--cw);height:var(--ch);flex:0 0 auto;transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s}
+.hand .cd2 .r{font-size:calc(var(--cw)*.235)}.hand .cd2 .s{font-size:calc(var(--cw)*.18)}.hand .cd2 .bg{font-size:calc(var(--cw)*.29)}
+.slots{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.slot{width:62px;height:89px;border:2px dashed var(--gray);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.4rem;color:var(--gray)}
+.xbox{border:2px solid var(--ink);background:var(--lite);padding:10px;text-align:center}
+.xp{border:2px solid var(--ink);background:var(--lite);padding:8px 10px;text-align:center;line-height:1.35;overflow-wrap:anywhere}
+.xp .xs{font-size:.8rem;color:var(--gray)}
+.xp .tg{font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gray)}
+.xst{margin-top:4px;font-family:'Courier Prime','Courier New',monospace;font-size:.78rem;font-weight:700}
+.xst.ok{color:var(--ok)}
 .hand .cd2.sel{transform:translateY(-12px);box-shadow:0 0 0 3px var(--or),0 8px 12px rgba(0,0,0,.3);z-index:2}
 .hand .cd2.dim{opacity:.4}
 @keyframes drop{from{transform:translateY(-16px) scale(1.06);opacity:0}to{transform:none;opacity:1}}
@@ -115,11 +127,11 @@ button.cd2{padding:3px 4px}
   .table{min-height:84px;padding:6px;gap:4px}
   .pile{height:116px}.pl{top:14px}
   .cd2{width:50px;height:72px}.cd2.lg{width:58px;height:84px}.cd2 .r{font-size:1.1rem}.cd2.lg .r{font-size:1.3rem}.cd2 .bg{font-size:1.4rem}.cd2.lg .bg{font-size:1.6rem}
-  .hand{min-height:76px}.hand .cd2{margin:5px -10px 0}
+  .hand{min-height:76px;padding-top:8px}.slot{width:50px;height:72px}
   .btn{height:48px}.lh{font-size:1.9rem}
   .chart .nd{min-height:32px}
 }
-@media (max-width:340px){.strip{gap:4px}.pn .pc{font-size:.66rem}.pn .pnm{font-size:.78rem}.cd2{width:48px;height:69px}.cd2.lg{width:56px;height:80px}.hand .cd2{margin:5px -11px 0}}
+@media (max-width:340px){.strip{gap:4px}.pn .pc{font-size:.66rem}.pn .pnm{font-size:.78rem}.cd2.lg{width:60px;height:86px}.slot{width:52px;height:75px}}
 .acts .btn{flex:1}
 .acts .pri{flex:2}
 /* chat strip + topbar */
@@ -129,7 +141,8 @@ button.cd2{padding:3px 4px}
 .ib{min-width:44px;height:44px;border:2px solid var(--ink);background:var(--lite);font-weight:700;font-size:.8rem}
 .chatstrip{min-height:44px;width:100%;border:2px solid var(--ink);background:var(--lite);padding:0 12px;display:flex;align-items:center;gap:8px;text-align:left;font-size:.85rem;overflow:hidden}
 .chatstrip b{font-family:'Courier Prime','Courier New',monospace}
-.chatstrip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.chatstrip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.chatstrip i{display:block;overflow:hidden;text-overflow:ellipsis}
 .chatstrip .dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--or)}
 /* lobby / lists */
 .sec{display:flex;flex-direction:column;gap:8px}
@@ -242,7 +255,7 @@ function onSnap(s){
   if(s.seq!=null)seq=s.seq;
   var mine=s.hand||[];
   sel=sel.filter(function(c){return mine.indexOf(c)>=0});
-  var myTurn=(s.phase==='playing'&&s.turn===s.me)||(s.phase==='exchange'&&s.give);
+  var myTurn=(s.phase==='playing'&&s.turn===s.me)||(s.phase==='exchange'&&s.xchg&&s.xchg.mine&&!s.xchg.mine.submitted);
   if(!myTurn)sel=[];
   turnDeadline=s.turnLeft==null?null:Date.now()+s.turnLeft;
   snap=s;
@@ -373,8 +386,9 @@ function cardHTML(c,o){
   var r=E.rankLabel(E.rankOf(c)),s=SY[E.suitOf(c)];
   var cls='cd2'+(isRed(c)?' rd':'')+(o.sel?' sel':'')+(o.dim?' dim':'')+(o.lg?' lg':'');
   var inner='<span class="r">'+r+'</span><span class="s">'+s+'</span><span class="bg">'+s+'</span>';
-  if(o.btn)return '<button class="'+cls+'" data-a="card" data-c="'+c+'" aria-pressed="'+(o.sel?'true':'false')+'" aria-label="'+r+' of '+E.SUIT_NAME[E.suitOf(c)]+'">'+inner+'</button>';
-  return '<span class="'+cls+'" role="img" aria-label="'+r+' of '+E.SUIT_NAME[E.suitOf(c)]+'">'+inner+'</span>';
+  var st=o.ml!=null?' style="margin-left:'+o.ml+'px"':'';
+  if(o.btn)return '<button class="'+cls+'" data-a="card" data-c="'+c+'"'+st+' aria-pressed="'+(o.sel?'true':'false')+'" aria-label="'+r+' of '+E.SUIT_NAME[E.suitOf(c)]+'">'+inner+'</button>';
+  return '<span class="'+cls+'"'+st+' role="img" aria-label="'+r+' of '+E.SUIT_NAME[E.suitOf(c)]+'">'+inner+'</span>';
 }
 
 /* org chart. tiers: [{k:'pres'|'vp'|'cit'|'va'|'ass', nodes:[{t,n,me}]}] */
@@ -502,11 +516,6 @@ function pileHTML(plays,fresh){
 }
 function tableHTML(s){
   var h='<div class="table" aria-live="polite">';
-  if(s.phase==='exchange'){
-    if(s.give){var to=nameOf(s.give.to);h+='<div class="big">Hand down '+plural(s.give.k,'card')+'</div><div class="hint">You got '+esc(to)+'’s best cards. Pick '+s.give.k+' of yours to give back.</div>'}
-    else{var w=s.pending.length?nameOf(s.pending[0].hi):'';h+='<div class="big">Hand-downs</div><div class="hint">Waiting for '+esc(w)+' to hand down cards. The lowest titles already gave up their best.</div>'}
-    return h+'</div>';
-  }
   var tr=s.trick;
   if(tr&&tr.plays.length){
     var last=tr.plays[tr.plays.length-1],prev=tr.plays.length>1?tr.plays[tr.plays.length-2]:null;
@@ -528,8 +537,14 @@ function tableHTML(s){
 }
 
 function trickReq(s){return s.trick?{count:s.trick.count,rank:s.trick.rank}:null}
+// the card swap: can this card go in the pile I hand over? (the server checks again; this only guides the tap)
+function swapMine(s){var m=s.xchg&&s.phase==='exchange'?s.xchg.mine:null;return m&&!m.submitted?m:null}
+function swapAllowed(s,m,c){
+  var rs=s.hand.map(E.rankOf).sort(function(a,b){return m.mode==='best'?b-a:a-b}),edge=rs[Math.min(m.k,rs.length)-1],r=E.rankOf(c);
+  return m.mode==='best'?r>=edge:r<=edge;
+}
 function canUse(s,c){
-  if(s.phase==='exchange')return !!s.give;
+  if(s.phase==='exchange'){var m=swapMine(s);return !!m&&swapAllowed(s,m,c)}
   if(s.phase!=='playing'||s.turn!==s.me)return false;
   var tr=trickReq(s);if(!tr)return true;
   var r=E.rankOf(c);if(r<=tr.rank)return false;
@@ -539,7 +554,8 @@ function tapCard(c){
   var s=snap;if(!s||!canUse(s,c))return;
   var i=sel.indexOf(c);
   if(s.phase==='exchange'){
-    if(i>=0)sel.splice(i,1);else if(sel.length<s.give.k)sel.push(c);else {sel.shift();sel.push(c)}
+    var m=swapMine(s);if(!m)return;
+    if(i>=0)sel.splice(i,1);else if(sel.length<m.k)sel.push(c);else{sel.shift();sel.push(c)}
     render();return;
   }
   var tr=trickReq(s),r=E.rankOf(c);
@@ -559,25 +575,86 @@ function gameHTML(s){
   var h=topBar(s)+stripHTML(s)+tableHTML(s);
   var last=s.chat.length?s.chat[s.chat.length-1]:null,unread=last&&last.id>chatSeen;
   h+='<button class="chatstrip" data-a="chat" aria-label="Open chat">'+(unread?'<span class="dot"></span>':'')+(last?(last.sys?'<span><i>'+esc(last.text)+'</i></span>':'<span><b>'+esc(last.name)+':</b> '+esc(last.text)+'</span>'):'<span style="color:var(--gray)">Say something to the table…</span>')+'</button>';
-  var myTurn=s.phase==='playing'&&s.turn===s.me,give=s.phase==='exchange'&&s.give;
+  var myTurn=s.phase==='playing'&&s.turn===s.me;
   var st;
-  if(give)st='Choose '+plural(give.k,'card')+' to hand down <small>('+sel.length+' picked)</small>';
-  else if(myTurn)st='Your turn'+(turnDeadline?' <small id="tm"></small>':'');
+  if(myTurn)st='Your turn'+(turnDeadline?' <small id="tm"></small>':'');
   else if(s.phase==='playing')st='<small>Waiting for '+esc(nameOf(s.turn))+(turnDeadline?' <span id="tm"></span>':'')+'</small>';
   else st='<small>&nbsp;</small>';
   var meP=player(s.me);
-  if(meP&&meP.out&&s.phase!=='exchange')st='You are out: '+TITLE[E.titlesFor(s.n)[meP.out-1]]+' <small>watch the rest play</small>';
+  if(meP&&meP.out)st='You are out: '+TITLE[E.titlesFor(s.n)[meP.out-1]]+' <small>watch the rest play</small>';
   h+='<div class="status">'+st+'</div>';
-  h+='<div class="hand" role="group" aria-label="Your hand">'+s.hand.map(function(c){
-    var on=canUse(s,c);
-    return cardHTML(c,{btn:1,sel:sel.indexOf(c)>=0,dim:(myTurn||give)&&!on});
-  }).join('')+'</div>';
-  if(give){
-    h+='<div class="acts"><button class="btn pri" data-a="give"'+(sel.length===give.k?'':' disabled')+'>Hand down '+plural(give.k,'card')+'</button></div>';
-  }else{
-    var bad=sel.length?E.playError(sel,trickReq(s)):'x';
-    h+='<div class="acts">'+(s.trick?'<button class="btn" data-a="pass"'+(myTurn?'':' disabled')+'>Pass</button>':'')+'<button class="btn pri" data-a="play"'+(myTurn&&!bad?'':' disabled')+'>'+(sel.length?'Play '+sel.map(E.cardLabel).join(' '):'Play')+'</button></div>';
+  h+=handHTML(s,{btn:1,dimOn:myTurn});
+  var bad=sel.length?E.playError(sel,trickReq(s)):'x';
+  h+='<div class="acts">'+(s.trick?'<button class="btn" data-a="pass"'+(myTurn?'':' disabled')+'>Pass</button>':'')+'<button class="btn pri" data-a="play"'+(myTurn&&!bad?'':' disabled')+'>'+(sel.length?'Play '+sel.map(E.cardLabel).join(' '):'Play')+'</button></div>';
+  return h;
+}
+
+/* The hand is laid out in code so it can never run past the screen: cards shrink to fit, and the overlap
+   and the number of rows are worked out from the width actually available. */
+function availW(){
+  var a=$('#app');if(!a)return 320;
+  var cs=getComputedStyle(a);
+  return Math.max(200,Math.floor(a.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))-2);
+}
+function handLayout(n){
+  var W=availW(),short=window.innerHeight<720;
+  var cw=Math.max(44,Math.min(short?52:62,Math.floor(W/5.6))),ch=Math.round(cw*1.435);
+  var minStep=Math.max(26,Math.round(cw*.5));
+  var perRow=Math.max(1,Math.floor((W-cw)/minStep)+1);
+  var rows=Math.ceil(n/perRow),per=Math.ceil(n/rows);
+  var step=per>1?Math.min(Math.round(cw*.78),Math.floor((W-cw)/(per-1))):0;
+  return{cw:cw,ch:ch,rows:rows,per:per,step:step};
+}
+function handHTML(s,o){
+  var hand=s.hand,n=hand.length;
+  if(!n)return '<div class="hand"></div>';
+  var L=handLayout(n);
+  var h='<div class="hand" role="group" aria-label="Your hand" style="--cw:'+L.cw+'px;--ch:'+L.ch+'px">';
+  for(var r=0;r<L.rows;r++){
+    var part=hand.slice(r*L.per,(r+1)*L.per);
+    h+='<div class="hr" style="margin-top:'+(r?(L.rows>2?-Math.round(L.ch*.34):6):0)+'px">';
+    part.forEach(function(c,i){
+      var on=o.btn&&canUse(s,c);
+      h+=cardHTML(c,{btn:!!o.btn,sel:sel.indexOf(c)>=0,dim:!!o.btn&&!!o.dimOn&&!on,ml:i?-(L.cw-L.step):0});
+    });
+    h+='</div>';
   }
+  return h+'</div>';
+}
+
+/* the card swap screen */
+function slotsHTML(cards,k,mark){
+  var h='<div class="slots">';
+  for(var i=0;i<k;i++)h+=cards&&cards[i]?cardHTML(cards[i]):'<span class="slot" aria-hidden="true">'+(mark||'')+'</span>';
+  return h+'</div>';
+}
+function swapLine(pr,s){
+  var hi=player(pr.hi),lo=player(pr.lo);
+  var st=pr.done?'Swapped':(pr.hiDone&&pr.loDone?'Swapping':(pr.hiDone||pr.loDone?'One side is in':'Choosing'));
+  return '<div class="xp"><div><b>'+esc(hi.name)+'</b> <span class="tg">'+TITLE[hi.title||'president']+'</span></div><div class="xs">swaps '+plural(pr.k,'card')+' with</div><div><b>'+esc(lo.name)+'</b> <span class="tg">'+TITLE[lo.title||'asshole']+'</span></div><div class="xst'+(pr.done?' ok':'')+'">'+st+'</div></div>';
+}
+function exchangeHTML(s){
+  var x=s.xchg,m=x.mine,h=topBar(s)+'<div class="h2">Card swap</div>';
+  var open=swapMine(s);
+  if(m){
+    var other=player(m.other),me=player(s.me);
+    var my=TITLE[me.title||(m.side==='hi'?'president':'asshole')];
+    if(m.done)h+='<p class="note"><b>'+esc(my)+'.</b> Swap done with '+esc(other.name)+'. This is what changed hands.</p>';
+    else if(m.side==='lo')h+='<p class="note"><b>'+esc(my)+'.</b> Your '+(m.k===1?'best card goes':m.k+' best cards go')+' to '+esc(other.name)+', who hands you '+(m.k===1?'their lowest card':'their '+m.k+' lowest')+'.</p>';
+    else h+='<p class="note"><b>'+esc(my)+'.</b> You get '+esc(other.name)+'’s '+(m.k===1?'best card':m.k+' best cards')+' and hand down '+(m.k===1?'your lowest card':'your '+m.k+' lowest')+'.</p>';
+    var giving=m.gave||sel;
+    h+='<div class="xbox"><div class="lbl">You give</div>'+slotsHTML(giving,m.k,'?')+'<div class="lbl" style="margin-top:10px">You get from '+esc(other.name)+'</div>'+slotsHTML(m.got,m.k,'?')+'</div>';
+    var err=open&&sel.length===m.k?E.exchangeError(s.hand,sel,m.k,m.mode):null;
+    if(open)h+='<div class="'+(err?'err':'status')+'" role="alert">'+(err?esc(err):(sel.length===m.k?'Looks right. Confirm to swap.':'Pick '+plural(m.k,'card')+' ('+sel.length+' picked)'+(turnDeadline?' <small id="tm"></small>':'')))+'</div>';
+    else if(!m.done)h+='<div class="status"><small>Waiting for '+esc(other.name)+' to choose'+(turnDeadline?' <span id="tm"></span>':'')+'</small></div>';
+    if(x.pairs.length>1){h+='<div class="lbl">All swaps this round</div>'+x.pairs.map(function(p){return swapLine(p,s)}).join('')}
+  }else{
+    h+='<p class="note">'+(x.done?'The swap is done.':'The top and bottom of the table are swapping cards. You keep your hand; their cards stay hidden.')+'</p>'+x.pairs.map(function(p){return swapLine(p,s)}).join('');
+    if(!x.done&&turnDeadline)h+='<div class="status"><small>Auto-swap in <span id="tm"></span></small></div>';
+  }
+  h+=handHTML(s,{btn:!!open,dimOn:!!open});
+  if(x.done)h+='<div class="acts"><button class="btn pri" data-a="go">Start playing</button></div>';
+  else if(open)h+='<div class="acts"><button class="btn pri" data-a="give"'+(sel.length===m.k&&!E.exchangeError(s.hand,sel,m.k,m.mode)?'':' disabled')+'>Confirm swap</button></div>';
   return h;
 }
 
@@ -612,6 +689,7 @@ function render(){
   if(!snap)a.innerHTML=homeHTML();
   else if(snap.phase==='lobby')a.innerHTML=lobbyHTML(snap);
   else if(snap.phase==='roundover'||snap.phase==='gameover')a.innerHTML=roundHTML(snap);
+  else if(snap.phase==='exchange'||snap.phase==='xdone')a.innerHTML=exchangeHTML(snap);
   else a.innerHTML=gameHTML(snap);
   paintConn();paintTimer();
 }
@@ -633,7 +711,7 @@ function openModal(kind){
     +'<li>A 2 can’t be beaten, so it ends the trick at once.</li>'
     +'<li>First out is President, last with cards is the Asshole, everyone in between is a Citizen. With 7 or 8 players the second out is Vice President and the second last is Vice Asshole.</li>'
     +'<li>When someone goes out and wins the trick, the next player round the table leads. Small numbers next to the names show the order of play.</li>'
-    +'<li>Next round the Asshole gives the President their 2 best cards and the President hands back any 2 (1 card with 3 players). From 7 players the vices swap 1 card too.</li>'
+    +'<li>Before the next round there is a card swap. The Asshole hands the President their 2 best cards and the President hands down their 2 lowest (1 card each with 3 players). You pick the cards yourself; the game only accepts the right ones. From 7 players the Vice Asshole and Vice President swap 1 card too. Everyone else watches the swap.</li>'
     +'<li>The Asshole leads the next round. Host: tick “Start with roles” in the lobby to carry on a game with the titles you pick.</li></ul></div>';
   }else if(kind==='settings'&&snap){
     var host=amHost();
@@ -680,7 +758,8 @@ function onAct(el){
     case 'card':return tapCard(el.dataset.c);
     case 'play':if(sel.length){var c=sel.slice();sel=[];act({type:'play',cards:c});render()}return;
     case 'pass':sel=[];return act({type:'pass'});
-    case 'give':if(snap.give&&sel.length===snap.give.k){var g=sel.slice();sel=[];act({type:'give',cards:g})}return;
+    case 'give':var gm=swapMine(snap);if(gm&&sel.length===gm.k){var g=sel.slice();sel=[];act({type:'give',cards:g})}return;
+    case 'go':return act({type:'go'});
     case 'start':return act({type:'start'});
     case 'next':return act({type:'next'});
     case 'finish':return act({type:'finish'});
@@ -717,6 +796,13 @@ document.addEventListener('keydown',function(e){
   else if(t.id==='ci')onAct({dataset:{a:'send'}});
 });
 
+// the hand is laid out from the width available, so redo it when the phone turns or the window changes
+var rzT=null;
+var lastAW=0;
+function relayout(){clearTimeout(rzT);rzT=setTimeout(function(){var w=availW();if(w!==lastAW){lastAW=w;if(snap)render()}},120)}
+window.addEventListener('resize',relayout);
+window.addEventListener('orientationchange',relayout);
+if(window.ResizeObserver)new ResizeObserver(relayout).observe(document.body);
 applyUI();
 render();
 if(sess&&!DEMO)tryRejoin();

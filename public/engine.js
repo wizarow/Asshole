@@ -100,16 +100,32 @@
       if (level === 'hard' && best >= 13 && nonTwo >= 5 && minOpp > 3 && trick.count === 1 && Math.random() < 0.5) return null;
       return g[best].slice(0, trick.count);
     },
-    // The k cards a President or Vice President hands down: the lowest ones, keeping pairs together where it can.
-    give: function (hand, k) {
-      var g = groups(hand);
-      var arr = sortHand(hand).sort(function (a, b) {
-        var sa = rankOf(a) + (g[rankOf(a)].length > 1 ? 0.4 : 0), sb = rankOf(b) + (g[rankOf(b)].length > 1 ? 0.4 : 0);
-        return sa - sb;
-      });
-      return arr.slice(0, k);
-    }
+    // What a President or Vice President hands down: their k lowest cards.
+    give: function (hand, k) { return sortHand(hand).slice(0, k); },
+    // What an Asshole or Vice Asshole hands up: their k best cards.
+    best: function (hand, k) { return sortHand(hand).slice(-k); }
   };
+
+  // null when `cards` are a legal hand-down. The Asshole side has to give the k highest cards it holds,
+  // the President side may only give its k lowest (ties in rank can go in any suit).
+  function exchangeError(hand, cards, k, mode) {
+    if (!Array.isArray(cards) || cards.length !== k) return 'Pick ' + k + (k === 1 ? ' card' : ' cards') + ' to give';
+    var seen = {}, i;
+    for (i = 0; i < cards.length; i++) {
+      if (typeof cards[i] !== 'string' || seen[cards[i]] || hand.indexOf(cards[i]) < 0) return 'You do not hold that card';
+      seen[cards[i]] = 1;
+    }
+    var dir = mode === 'best' ? function (a, b) { return b - a; } : function (a, b) { return a - b; };
+    var want = hand.map(rankOf).sort(dir).slice(0, k), got = cards.map(rankOf).sort(dir);
+    for (i = 0; i < k; i++) {
+      if (want[i] !== got[i]) {
+        return mode === 'best'
+          ? 'You have to give your ' + (k === 1 ? 'highest card' : k + ' highest cards')
+          : 'You can only give your ' + (k === 1 ? 'lowest card' : k + ' lowest cards');
+      }
+    }
+    return null;
+  }
 
   function Game(code, opts) {
     opts = opts || {};
@@ -117,7 +133,7 @@
     this.fast = !!opts.fast;
     this.players = [];
     this.size = 5;
-    this.phase = 'lobby';       // lobby | exchange | playing | trickdone | roundover | gameover
+    this.phase = 'lobby';       // lobby | exchange | xdone | playing | trickdone | roundover | gameover
     this.hostId = null;
     this.nextId = 1;
     this.n = 0;
@@ -132,7 +148,7 @@
     this.prevOrder = null;
     this.titles = {};
     this.history = [];
-    this.pending = [];          // card hand-downs still waiting on a human
+    this.pending = [];          // this round's card swaps: { hi, lo, k, hiGive, loGive, done }
     this.rolesMode = false;     // host picks the starting titles (to carry on a game after everyone dropped)
     this.timer = null;
     this.ttimer = null;
@@ -289,6 +305,12 @@
       case 'play': return this.doPlay(p, a.cards);
       case 'pass': return this.doPass(p);
       case 'give': return this.doGive(p, a.cards);
+      case 'go': {
+        if (this.phase !== 'xdone') return { ok: true };   // someone else already carried on
+        clearTimeout(this.ttimer);
+        this.beginPlay();
+        return { ok: true };
+      }
       case 'next': {
         if (this.phase !== 'roundover') return { ok: true };   // someone else already dealt
         this.startRound();
@@ -322,6 +344,7 @@
       this.players = this.players.filter(function (x) { return x.id !== t.id; });
     } else {
       t.bot = true; t.token = null; t.connected = true;
+      if (this.phase === 'exchange') { this.autoBotSides(); this.settleExchange(); }
     }
     if (this.hostId === t.id) this.reassignHost();
     this.onKick(t.id, token, kicked);
@@ -399,30 +422,68 @@
       var order = this.prevOrder, k1 = n >= 4 ? 2 : 1;
       var pairs = [{ hi: order[0], lo: order[n - 1], k: k1 }];
       if (n >= VICE_FROM) pairs.push({ hi: order[1], lo: order[n - 2], k: 1 });
-      pairs.forEach(function (pr) {
-        var hi = self.byId(pr.hi), lo = self.byId(pr.lo);
-        var best = sortHand(lo.hand).slice(-pr.k);   // the lowest title hands over its best cards, no choice
-        lo.hand = lo.hand.filter(function (c) { return best.indexOf(c) < 0; });
-        hi.hand = sortHand(hi.hand.concat(best));
-        self.pushChat(null, '', lo.name + ' (' + TITLE[self.titles[lo.id]] + ') had to give ' + hi.name + ' ' + best.map(cardLabel).join(' '), true);
-        pr.done = false;
-        if (hi.bot) self.giveBack(hi, lo, pr, Bot.give(hi.hand, pr.k));
-        else self.pending.push(pr);
-      });
-      if (this.pending.length) {
-        this.phase = 'exchange';
-        this.emit();
-        return;
-      }
+      pairs.forEach(function (pr) { pr.hiGive = null; pr.loGive = null; pr.done = false; });
+      this.pending = pairs;
+      this.phase = 'exchange';
+      this.autoBotSides();
+      this.settleExchange();
+      this.emit();
+      return;
     }
     this.beginPlay();
   };
 
-  Game.prototype.giveBack = function (hi, lo, pr, cards) {
-    hi.hand = hi.hand.filter(function (c) { return cards.indexOf(c) < 0; });
-    lo.hand = sortHand(lo.hand.concat(cards));
+  // Bots hand over their cards at once: the lowest titles their best, the highest titles their worst.
+  Game.prototype.autoBotSides = function () {
+    var self = this;
+    this.pending.forEach(function (pr) {
+      if (pr.done) return;
+      var hi = self.byId(pr.hi), lo = self.byId(pr.lo);
+      if (hi.bot && !pr.hiGive) pr.hiGive = Bot.give(hi.hand, pr.k);
+      if (lo.bot && !pr.loGive) pr.loGive = Bot.best(lo.hand, pr.k);
+      self.swapIfReady(pr);
+    });
+  };
+
+  Game.prototype.swapIfReady = function (pr) {
+    if (pr.done || !pr.hiGive || !pr.loGive) return;
+    var hi = this.byId(pr.hi), lo = this.byId(pr.lo), a = pr.hiGive, b = pr.loGive;
+    hi.hand = sortHand(hi.hand.filter(function (c) { return a.indexOf(c) < 0; }).concat(b));
+    lo.hand = sortHand(lo.hand.filter(function (c) { return b.indexOf(c) < 0; }).concat(a));
     pr.done = true;
-    this.pushChat(null, '', hi.name + ' (' + TITLE[this.titles[hi.id]] + ') handed ' + cards.length + (cards.length === 1 ? ' card' : ' cards') + ' down to ' + lo.name, true);
+    this.pushChat(null, '', hi.name + ' (' + TITLE[this.titles[hi.id]] + ') and ' + lo.name + ' (' + TITLE[this.titles[lo.id]] + ') swapped ' + pr.k + (pr.k === 1 ? ' card' : ' cards'), true);
+  };
+
+  // Once every swap is done the table pauses on the result so each side can see what they gave and got.
+  Game.prototype.settleExchange = function () {
+    if (this.phase !== 'exchange' || !this.pending.every(function (x) { return x.done; })) return;
+    this.phase = 'xdone';
+    var self = this;
+    clearTimeout(this.ttimer);
+    this.ttimer = setTimeout(function () { if (self.phase === 'xdone') self.beginPlay(); }, this.fast ? 1 : 10000);
+  };
+
+  Game.prototype.exchangeWaiting = function () {
+    var w = [], self = this;
+    this.pending.forEach(function (pr) {
+      if (pr.done) return;
+      var hi = self.byId(pr.hi), lo = self.byId(pr.lo);
+      if (!hi.bot && !pr.hiGive) w.push({ pr: pr, side: 'hi', p: hi });
+      if (!lo.bot && !pr.loGive) w.push({ pr: pr, side: 'lo', p: lo });
+    });
+    return w;
+  };
+
+  // A human who is away (or ran out of time) is handed the legal choice automatically.
+  Game.prototype.autoExchange = function (everyone) {
+    var self = this;
+    this.exchangeWaiting().forEach(function (x) {
+      if (!everyone && x.p.connected) return;
+      x.pr[x.side + 'Give'] = x.side === 'hi' ? Bot.give(x.p.hand, x.pr.k) : Bot.best(x.p.hand, x.pr.k);
+      self.swapIfReady(x.pr);
+    });
+    this.settleExchange();
+    this.emit();
   };
 
   Game.prototype.beginPlay = function () {
@@ -434,19 +495,17 @@
     this.emit();
   };
 
+  // A President (or VP) picks their lowest cards to hand down, an Asshole (or VA) their best to hand up.
   Game.prototype.doGive = function (p, cards) {
     if (this.phase !== 'exchange') return { err: 'Not now' };
-    var pr = this.pending.filter(function (x) { return x.hi === p.id && !x.done; })[0];
-    if (!pr) return { err: 'Not now' };
-    if (!Array.isArray(cards) || cards.length !== pr.k) return { err: 'Pick ' + pr.k + (pr.k === 1 ? ' card' : ' cards') + ' to give' };
-    var seen = {};
-    for (var i = 0; i < cards.length; i++) {
-      if (typeof cards[i] !== 'string' || seen[cards[i]] || p.hand.indexOf(cards[i]) < 0) return { err: 'You do not hold that card' };
-      seen[cards[i]] = 1;
-    }
-    this.giveBack(p, this.byId(pr.lo), pr, cards);
-    if (this.pending.every(function (x) { return x.done; })) this.beginPlay();
-    else this.emit();
+    var w = this.exchangeWaiting().filter(function (x) { return x.p.id === p.id; })[0];
+    if (!w) return { err: 'Not now' };
+    var bad = exchangeError(p.hand, cards, w.pr.k, w.side === 'hi' ? 'worst' : 'best');
+    if (bad) return { err: bad };
+    w.pr[w.side + 'Give'] = cards.slice();
+    this.swapIfReady(w.pr);
+    this.settleExchange();
+    this.emit();
     return { ok: true };
   };
 
@@ -554,14 +613,17 @@
   // Arms one timer per turn (or per hand-down). Chat, renames etc. call emit() too, so the timer is only
   // re-armed when the thing being waited on changes.
   Game.prototype.schedule = function () {
-    var cur = null, key = null;
+    var cur = null, key = null, exAway = false;
     if (this.phase === 'playing') {
       cur = this.players[this.turnIdx];
       key = ['p', this.round, this.turnIdx, this.trick ? this.trick.plays.length : 0, this.passed.length, cur.id, cur.bot ? 1 : 0, cur.connected ? 1 : 0, this.timerSec].join('|');
     } else if (this.phase === 'exchange') {
-      var pr = this.pending.filter(function (x) { return !x.done; })[0];
-      cur = pr ? this.byId(pr.hi) : null;
-      if (cur) key = ['x', this.round, cur.id, cur.connected ? 1 : 0, this.timerSec].join('|');
+      var waiting = this.exchangeWaiting();
+      if (waiting.length) {
+        cur = waiting[0].p;
+        exAway = waiting.some(function (x) { return !x.p.connected; });
+        key = ['x', this.round, waiting.map(function (x) { return x.p.id + (x.p.connected ? 'c' : 'd'); }).join(','), this.timerSec].join('|');
+      }
     }
     if (!cur) {
       clearTimeout(this.timer); this.timer = null; this.schedKey = null; this.turnEnd = null;
@@ -572,13 +634,19 @@
     this.schedKey = key; this.turnEnd = null;
     var delay, timed = false;
     if (cur.bot) delay = this.fast ? 1 : 700 + rnd(600);
-    else if (!cur.connected) delay = this.fast ? 1 : (this.autoMs || 25000);
+    else if (!cur.connected || exAway) delay = this.fast ? 1 : (this.autoMs || 25000);
     else if (this.timerSec) { delay = this.timerSec * 1000 * this.timerScale; timed = true; }
     else return;
     if (timed) this.turnEnd = Date.now() + delay;
-    var self = this;
+    var self = this, exchanging = this.phase === 'exchange';
     this.timer = setTimeout(function () {
       self.timer = null; self.schedKey = null;
+      if (exchanging) {
+        if (self.phase !== 'exchange') return;
+        if (timed) self.pushChat(null, '', 'Time’s up: the card swap was done automatically', true);
+        self.autoExchange(timed);
+        return;
+      }
       if (timed && !cur.bot) self.pushChat(null, '', 'Time’s up for ' + cur.name + ': played automatically', true);
       self.botAct(cur.id);
     }, delay);
@@ -588,11 +656,6 @@
     var cur = this.byId(pid);
     if (!cur) return;
     var level = cur.bot ? this.botLevel : 'medium';   // a human who ran out of time (or is away) is played for at Medium
-    if (this.phase === 'exchange') {
-      var pr = this.pending.filter(function (x) { return x.hi === pid && !x.done; })[0];
-      if (pr) this.doGive(cur, Bot.give(cur.hand, pr.k));
-      return;
-    }
     if (this.phase !== 'playing' || this.players[this.turnIdx].id !== pid) return;
     var minOpp = 99;
     this.players.forEach(function (x) { if (x.id !== pid && x.hand.length && x.hand.length < minOpp) minOpp = x.hand.length; });
@@ -625,10 +688,21 @@
     var n = inGame ? this.n : Math.max(this.size, humans.length);
     var self = this;
     var turn = this.phase === 'playing' && this.players[this.turnIdx] ? this.players[this.turnIdx].id : null;
-    var give = null;
-    if (me && this.phase === 'exchange') {
-      var pr = this.pending.filter(function (x) { return x.hi === pid && !x.done; })[0];
-      if (pr) give = { k: pr.k, to: pr.lo };
+    // the card swap, seen from this player: what they must give, and (once both sides are in) what they gave and got
+    var xchg = null;
+    if (this.phase === 'exchange' || this.phase === 'xdone') {
+      var mine = null;
+      this.pending.forEach(function (pr) {
+        var side = pr.hi === pid ? 'hi' : pr.lo === pid ? 'lo' : null;
+        if (!side) return;
+        var my = side === 'hi' ? pr.hiGive : pr.loGive, other = side === 'hi' ? pr.loGive : pr.hiGive;
+        mine = { side: side, k: pr.k, other: side === 'hi' ? pr.lo : pr.hi, mode: side === 'hi' ? 'worst' : 'best',
+          submitted: !!my, gave: my || null, got: pr.done ? other : null, done: pr.done };
+      });
+      xchg = {
+        done: this.phase === 'xdone', mine: mine,
+        pairs: this.pending.map(function (pr) { return { hi: pr.hi, lo: pr.lo, k: pr.k, hiDone: !!pr.hiGive, loDone: !!pr.loGive, done: pr.done }; })
+      };
     }
     var s = {
       code: this.code, phase: this.phase, me: pid, host: this.hostId,
@@ -647,8 +721,7 @@
       lastPid: this.lastPid, trickWinner: this.trickWinner, roundEnds: this.trickEndRound,
       order: this.phase === 'roundover' || this.phase === 'gameover' ? this.prevOrder : null,
       history: this.history.slice(-8),
-      hand: me && inGame ? me.hand : [], give: give,
-      pending: this.phase === 'exchange' ? this.pending.filter(function (x) { return !x.done; }).map(function (x) { return { hi: x.hi, lo: x.lo, k: x.k }; }) : [],
+      hand: me && inGame ? me.hand : [], xchg: xchg,
       verdict: this.phase === 'gameover' ? this.verdict() : null,
       timerSec: this.timerSec, botLevel: this.botLevel, seq: this.seq,
       turnLeft: this.turnEnd && (this.phase === 'playing' || this.phase === 'exchange') ? Math.max(0, this.turnEnd - Date.now()) : null,
@@ -659,7 +732,7 @@
 
   return {
     Game: Game, Bot: Bot, SUITS: SUITS, SUIT_NAME: SUIT_NAME, SUIT_SYM: SUIT_SYM, TITLE: TITLE, TWO: TWO,
-    suitOf: suitOf, rankOf: rankOf, rankLabel: rankLabel, cardLabel: cardLabel, sortHand: sortHand, playError: playError,
+    suitOf: suitOf, rankOf: rankOf, rankLabel: rankLabel, cardLabel: cardLabel, sortHand: sortHand, playError: playError, exchangeError: exchangeError,
     titlesFor: titlesFor, VICE_FROM: VICE_FROM, newDeck: newDeck, shuffle: shuffle, cleanName: cleanName, groups: groups
   };
 });

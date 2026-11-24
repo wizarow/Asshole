@@ -30,8 +30,11 @@ Don't redeploy mid-game: live rooms are held in memory and drop on restart. The 
 - A 2 can't be beaten, so it takes the trick at once.
 - Finish order sets the titles: President, Vice President, Citizen(s), Vice Asshole, Asshole.
   3 players: President, Citizen, Asshole.
-- Next round the Asshole gives the President their best 2 cards and the President hands back any 2.
-  Vice Asshole gives Vice President their best 1 and gets 1 back. (3 players: 1 card, President and Asshole only.)
+- Before the next round comes a card swap screen. The Asshole picks their 2 best cards to give the President, the President picks
+  their 2 lowest to give back (3 players: 1 card each). From 7 players the Vice Asshole and Vice President swap 1 card the same way.
+  Both sides choose by hand; the server refuses anything else ("You have to give your 2 highest cards" / "You can only give your 2 lowest cards").
+  The two sides see what they gave and got, everyone else just sees that the swap is happening (no card faces). Away players and bots are handled
+  automatically, and with a turn timer the swap is done for anyone who runs out of time. Anyone taps Start playing to carry on (it also carries on after 10 s).
 - Rounds go on until the host ends the night. Most Asshole rounds is the Asshole of the night (fewest Presidencies breaks a tie).
 
 ## Start with roles

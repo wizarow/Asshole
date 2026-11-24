@@ -4,7 +4,12 @@ const E = require('../public/engine.js');
 const { Game } = E;
 
 let passed = 0;
-function t(name, fn) { try { fn(); passed++; console.log('ok   ' + name); } catch (e) { console.log('FAIL ' + name + '\n' + e.stack); process.exitCode = 1; } }
+const waits = [];
+function t(name, fn) {
+  const ok = () => { passed++; console.log('ok   ' + name); };
+  const bad = e => { console.log('FAIL ' + name + '\n' + e.stack); process.exitCode = 1; };
+  try { const r = fn(); if (r && r.then) waits.push(r.then(ok, bad)); else ok(); } catch (e) { bad(e); }
+}
 
 function table(n, humans) {
   const g = new Game('TEST', { fast: true });
@@ -142,15 +147,34 @@ t('next round: Asshole hands over best cards, President hands cards back, Asshol
   assert.strictEqual(g.phase, 'exchange');
   assert.strictEqual(g.pending.length, 1);            // 4 players: only the President and Asshole swap
   const pres = P[0], asshole = P[3];
-  const before = pres.hand.slice();
-  assert.strictEqual(pres.hand.length, 13 + 2);
-  assert.strictEqual(asshole.hand.length, 13 - 2);
-  assert.ok(g.act(pres.id, { type: 'give', cards: [pres.hand[0]] }).err, 'must give 2');
-  assert.ok(g.act(pres.id, { type: 'give', cards: [pres.hand[0], 'X1'] }).err, 'must hold them');
-  const give = pres.hand.slice(0, 2);
-  assert.ok(g.act(pres.id, { type: 'give', cards: give }).ok);
+  assert.strictEqual(pres.hand.length, 13);           // nothing moves until both sides have chosen
+  assert.strictEqual(asshole.hand.length, 13);
+  const aSorted = E.sortHand(asshole.hand), pSorted = E.sortHand(pres.hand);
+  const top2 = aSorted.slice(-2), low2 = pSorted.slice(0, 2);
+  // cheating is refused: the Asshole must give its best, the President only its lowest
+  assert.ok(g.act(asshole.id, { type: 'give', cards: [aSorted[0], aSorted[1]] }).err, 'asshole holding back its best');
+  assert.ok(g.act(asshole.id, { type: 'give', cards: [top2[0]] }).err, 'must give 2');
+  assert.ok(g.act(asshole.id, { type: 'give', cards: [top2[0], 'X1'] }).err, 'must hold them');
+  assert.ok(g.act(pres.id, { type: 'give', cards: pSorted.slice(-2) }).err, 'president giving high cards');
+  assert.ok(g.act(P[1].id, { type: 'give', cards: [P[1].hand[0], P[1].hand[1]] }).err, 'a citizen has nothing to give');
+  assert.ok(g.act(asshole.id, { type: 'give', cards: top2 }).ok);
+  assert.strictEqual(g.phase, 'exchange', 'still waiting on the President');
+  let sa = g.snapshot(asshole.id).xchg.mine, sp = g.snapshot(pres.id).xchg.mine, sc = g.snapshot(P[1].id).xchg;
+  assert.strictEqual(sa.submitted, true); assert.strictEqual(sa.got, null);
+  assert.strictEqual(sp.submitted, false); assert.strictEqual(sp.side, 'hi'); assert.strictEqual(sp.mode, 'worst');
+  assert.strictEqual(sc.mine, null, 'citizens only see that a swap is happening');
+  assert.strictEqual(sc.pairs.length, 1);
+  assert.strictEqual(JSON.stringify(sc).includes(top2[0]), false, 'no card faces leak to citizens');
+  assert.ok(g.act(asshole.id, { type: 'give', cards: top2 }).err, 'only once');
+  assert.ok(g.act(pres.id, { type: 'give', cards: low2 }).ok);
+  assert.strictEqual(g.phase, 'xdone');
   assert.strictEqual(pres.hand.length, 13);
   assert.strictEqual(asshole.hand.length, 13);
+  assert.ok(top2.every(c => pres.hand.includes(c)) && low2.every(c => asshole.hand.includes(c)));
+  sp = g.snapshot(pres.id).xchg.mine; sa = g.snapshot(asshole.id).xchg.mine;
+  assert.deepStrictEqual(sp.gave, low2); assert.deepStrictEqual(sp.got, top2);
+  assert.deepStrictEqual(sa.gave, top2); assert.deepStrictEqual(sa.got, low2);
+  g.act(P[1].id, { type: 'go' });
   assert.strictEqual(g.phase, 'playing');
   assert.strictEqual(g.players[g.turnIdx].id, asshole.id);
   const all = [].concat(...g.players.map(p => p.hand));
@@ -179,7 +203,9 @@ t('starting roles: host picks, one person per title, bots fill the rest', () => 
   assert.strictEqual(g.titles[c], 'asshole');
   assert.strictEqual(Object.values(g.titles).filter(x => x === 'vp').length, 1);
   assert.ok(pid(g.prevOrder.find(id => g.titles[id] === 'vp')).bot);
-  assert.strictEqual(g.pending.filter(x => !x.done).length, 1);   // President chooses; the bot Vice President already handed down
+  // the bot Vice President handed down at once, but the human Vice Asshole and the human President/Asshole pair still choose
+  assert.strictEqual(g.pending.filter(x => !x.done).length, 2);
+  assert.strictEqual(g.exchangeWaiting().length, 3);
   g.destroy();
 });
 
@@ -218,6 +244,33 @@ t('trick records who led it', () => {
   g.act(a.id, { type: 'play', cards: ['C4'] });
   assert.strictEqual(g.snapshot(1).trick.lead, a.id);
   g.destroy();
+});
+
+t('hand-down rule: highest cards up, lowest cards down, ties in any suit', () => {
+  const hand = ['C3', 'D3', 'C5', 'H9', 'S9', 'C14', 'S15'];
+  assert.strictEqual(E.exchangeError(hand, ['C14', 'S15'], 2, 'best'), null);
+  assert.ok(E.exchangeError(hand, ['H9', 'S15'], 2, 'best'));
+  assert.strictEqual(E.exchangeError(hand, ['C3', 'D3'], 2, 'worst'), null);
+  assert.strictEqual(E.exchangeError(hand, ['D3', 'C5'], 2, 'worst') !== null, true);
+  assert.strictEqual(E.exchangeError(hand, ['H9'], 1, 'best') !== null, true);
+  assert.strictEqual(E.exchangeError(['C5', 'D5', 'H5', 'S9'], ['D5'], 1, 'worst'), null);   // equal ranks: any suit
+});
+
+t('away humans in the swap are handled automatically, then the table carries on', () => {
+  const g = table(4, 4);
+  g.fast = true;
+  g.act(1, { type: 'start' });
+  const P = g.players.slice();
+  g.prevOrder = P.map(p => p.id);
+  g.titles = {}; E.titlesFor(4).forEach((tt, i) => { g.titles[P[i].id] = tt; });
+  g.phase = 'roundover';
+  g.act(1, { type: 'next' });
+  assert.strictEqual(g.phase, 'exchange');
+  g.setConnected(P[0].id, false); g.setConnected(P[3].id, false);
+  return new Promise(resolve => setTimeout(() => {
+    assert.ok(['xdone', 'playing'].includes(g.phase) || g.phase === 'trickdone', 'phase ' + g.phase);
+    g.destroy(); resolve();
+  }, 150));
 });
 
 t('bot never makes an illegal move', () => {
@@ -260,6 +313,7 @@ function simulate(n, rounds, level, withRoles) {
 
 t('simulated games finish for 3 to 8 players at every bot level', async () => {});
 (async () => {
+  await Promise.all(waits);
   for (const n of [3, 4, 5, 6, 7, 8]) {
     for (const lvl of ['easy', 'medium', 'hard']) {
       try {
