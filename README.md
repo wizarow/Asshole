@@ -51,6 +51,15 @@ Needs: President and Asshole up to 5 players; all four titles from 6 players up 
 ## Settings
 Name, text size, host: bot level (Easy, Medium, Hard), turn timer (Off, 30 s, 45 s, 1 min, 2 min), remove a player (a bot takes the seat mid-game).
 
+## Phone feel and speed
+- Touch: hover highlights only on devices with a mouse, long-press doesn't select buttons or cards (chat and inputs stay selectable),
+  every tap target is 44 px or more, inputs are 16 px so iOS doesn't zoom, and tapping the room code opens the phone's share sheet
+  (falls back to copying the invite link).
+- Compression: `server.js` compresses `index.html` and `engine.js` once at startup (brotli and gzip, built-in zlib, no packages) and serves
+  whichever the browser accepts, with an ETag so a repeat visit is a 0-byte 304. About 88 KB per first visit becomes about 23 KB.
+  The live stream and API replies are not compressed. Render may also compress at its edge; the two don't conflict.
+- Not done yet: installing as a home-screen app (manifest, icons) and the Android Back button closing sheets. Both need a real phone to test.
+
 ## Notes
 - Name is required to create or join. Rejoin after a refresh is automatic on the same device. `/?r=CODE` prefills the room code.
 - Turn timer: when it runs out a bot plays that turn and a note appears in the chat.

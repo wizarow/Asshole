@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Asshole Card Game</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E9EBEE">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#E9EBEE;--lite:#F6F7F9;--ink:#101522;--gray:#4A5062;--or:#F25C1F;--on-or:#101522;--rust:#B83600;--red:#C42A18;--ok:#2E7D32;--fs:16px;color-scheme:light}
+html[data-theme=night]{--paper:#11141C;--lite:#1A1F2B;--ink:#E8ECF4;--gray:#A0A7B8;--or:#F25C1F;--on-or:#101522;--rust:#FF8A5C;--ok:#5BC46B;color-scheme:dark}
+html[data-theme=felt]{--paper:#0F3B2D;--lite:#164A39;--ink:#F2EEDF;--gray:#B6C8BC;--or:#E3B94A;--on-or:#10261E;--rust:#FFB08A;--ok:#7BD88A;color-scheme:dark}
+html[data-theme=blue]{--paper:#DCE6FA;--lite:#EEF3FD;--ink:#0E1B4D;--gray:#42507D;--or:#FF6A3D;--on-or:#0E1B4D;--rust:#A93200;--ok:#2E7D32}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:var(--fs);background:var(--paper);overflow-x:hidden}
+img,svg{max-width:100%}
+#app>*{max-width:100%}
+body{margin:0;min-height:100vh;min-height:100dvh;background:var(--paper);color:var(--ink);font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit;touch-action:manipulation}
+button{cursor:pointer;border-radius:0}
+::selection{background:var(--or);color:var(--ink)}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.mono{font-family:'Courier Prime','Courier New',monospace}
+#app{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:calc(18px + env(safe-area-inset-top)) 20px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+h1,h2,h3,p{margin:0}
+.lh{font-stretch:125%;font-weight:900;font-size:2.15rem;line-height:1;letter-spacing:-.01em;white-space:nowrap}
+.sub{font-size:.95rem;font-weight:500;color:var(--gray);margin-top:6px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.stamp{margin-top:4px;padding:4px 8px;border:2px solid var(--rust);color:var(--rust);font-weight:800;font-size:.75rem;line-height:1.15;letter-spacing:.1em;text-transform:uppercase;text-align:center;transform:rotate(-6deg)}
+.memo{border-top:2px solid var(--ink);padding-top:10px;font-family:'Courier Prime','Courier New',monospace;font-size:.82rem;line-height:1.55}
+.memo div{display:flex;gap:10px}.memo b{flex:0 0 48px}
+.cap{text-align:center;font-family:'Courier Prime','Courier New',monospace;font-size:.75rem;line-height:1.45;color:var(--gray)}
+.lbl{display:block;font-family:'Courier Prime','Courier New',monospace;font-weight:700;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)}
+.cell{border:2px solid var(--ink);background:var(--lite);padding:6px 12px 8px}
+.cell:focus-within{box-shadow:0 0 0 3px rgba(242,92,31,.55)}
+.cell input{display:block;width:100%;height:32px;padding:0;border:0;background:transparent;font-size:1.25rem;font-weight:500;outline:none}
+input::placeholder{color:var(--gray)}
+.btn{height:54px;border:2px solid var(--ink);background:transparent;font-weight:700;font-size:1rem;padding:0 14px;transition:transform .12s,filter .12s}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.4;cursor:default}
+.pri{background:var(--or);color:var(--on-or);border-color:var(--ink);font-weight:800;font-size:1.1rem;letter-spacing:.01em}
+/* hover only where there is a mouse: on a phone the last button tapped would stay highlighted */
+@media (hover:hover){.pri:hover:not([disabled]){filter:brightness(1.05)}}
+/* long-press on buttons, cards and boxes must not select text or open a copy menu; typing and chat stay selectable */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,.log,.note{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.dk{background:var(--ink);color:var(--lite)}
+.row{display:flex;gap:10px;align-items:stretch}
+.row .btn{white-space:nowrap;min-width:0}
+.code{flex:0 0 112px;width:112px;min-width:0;height:52px;border:2px solid var(--ink);background:var(--lite);text-align:center;text-transform:uppercase;letter-spacing:.3em;font-family:'Courier Prime','Courier New',monospace;font-weight:700;font-size:1.1rem;border-radius:0;outline:none;padding:0 8px}
+.code:focus{box-shadow:0 0 0 3px rgba(242,92,31,.55)}
+.link{min-height:44px;padding:0 8px;background:none;border:0;color:var(--gray);font-weight:500;font-size:.9rem;text-decoration:underline;text-underline-offset:4px}
+.chk{display:flex;gap:10px;align-items:center;min-height:44px;font-size:.9rem;font-weight:500;cursor:pointer}
+.chk input{width:22px;height:22px;accent-color:var(--ink);margin:0;flex:0 0 22px}
+.err{color:var(--rust);font-weight:700;font-size:.9rem}.err:empty{display:none}
+.ver{margin-top:auto;display:flex;justify-content:center;align-items:center;gap:6px;font-family:'Courier Prime','Courier New',monospace;font-size:.72rem;color:var(--gray);padding-top:4px}
+.cd{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.cd.wait{background:var(--or)}.cd.off{background:var(--rust)}
+/* org chart */
+.chart{width:100%;max-width:362px;margin:0 auto;display:flex;flex-direction:column}
+.mid{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.tier{display:grid;grid-template-columns:repeat(var(--k),1fr);column-gap:8px}
+.tier.one{grid-template-columns:minmax(0,62%);justify-content:center}
+.nd{min-height:40px;padding:4px 6px;border:2px solid var(--ink);background:var(--lite);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-width:0}
+.nd .t{font-weight:700;font-size:.78rem;letter-spacing:.07em;text-transform:uppercase;line-height:1.1}
+.nd .n{font-family:'Courier Prime','Courier New',monospace;font-size:.82rem;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nd.pres{background:var(--ink);color:var(--lite)}
+.nd.va{border-style:dashed;background:var(--paper)}
+.nd.ass{border-style:dashed;border-color:var(--rust);color:var(--rust);background:var(--paper)}
+.nd.me{box-shadow:0 0 0 3px var(--or)}
+.lk{position:relative;height:var(--h,14px)}
+.lk i{position:absolute;background:var(--ink);width:2px}
+.lk i.h{height:2px;width:auto}
+/* strip of players */
+.strip{display:grid;grid-template-columns:repeat(var(--c),1fr);gap:6px}
+.pn{border:2px solid var(--ink);background:var(--lite);padding:4px 5px 5px;min-width:0;text-align:center;position:relative}
+.pn .pt{font-weight:800;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gray);min-height:.8rem;line-height:1.1}
+.pn .pnm{font-family:'Courier Prime','Courier New',monospace;font-weight:700;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn .pc{font-size:.72rem;font-weight:600;color:var(--gray);white-space:nowrap}
+.pn.turn{background:var(--or);border-color:var(--ink);box-shadow:0 0 0 2px var(--ink);color:var(--on-or)}
+.pn.turn .pt,.pn.turn .pc{color:var(--on-or)}
+.pn .no{position:absolute;left:-7px;top:-9px;min-width:20px;height:20px;padding:0 4px;border-radius:10px;background:var(--ink);color:var(--paper);font-weight:800;font-size:.72rem;line-height:20px;text-align:center}
+.pn.out{background:var(--paper);border-style:dashed}
+.pn.away{opacity:.55}
+.pn .ps{position:absolute;top:-8px;right:-4px;background:var(--ink);color:var(--lite);font-size:.6rem;font-weight:800;letter-spacing:.08em;padding:1px 4px;text-transform:uppercase}
+/* table */
+.pile{position:relative;width:100%;height:158px}
+.pl{position:absolute;left:50%;top:30px;display:flex}
+.pl .cd2+.cd2{margin-left:-24px}
+.pl.old{filter:brightness(.92)}
+.table{flex:1 1 auto;min-height:190px;border:2px solid var(--ink);background:var(--lite);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;position:relative}
+.table .big{font-weight:800;font-size:1.05rem}
+.table .hint{font-size:.85rem;color:var(--gray);font-weight:500}
+.play{display:flex;justify-content:center;align-items:center}
+.play .cd2{margin-left:-14px}
+.play .cd2:first-child{margin-left:0}
+.ghost{opacity:.5;transform:scale(.82)}
+.who{font-family:'Courier Prime','Courier New',monospace;font-weight:700;font-size:.85rem}
+.takes{position:absolute;top:8px;right:8px;padding:3px 8px;border:2px solid var(--rust);color:var(--rust);font-weight:800;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;transform:rotate(4deg);background:var(--lite)}
+/* cards */
+.cd2{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;width:62px;height:89px;padding:3px 4px;border:2px solid #101522;border-radius:5px;background:#FFFFFF;color:#101522;line-height:1;font-weight:800;text-align:left;box-shadow:0 1px 2px rgba(16,21,34,.25),0 4px 8px rgba(16,21,34,.12)}
+.cd2.rd{color:var(--red)}
+.cd2 .r{font-size:1.45rem;letter-spacing:-.02em}
+.cd2 .s{font-size:1.1rem;margin-top:1px}
+.cd2 .bg{position:absolute;right:5px;bottom:5px;font-size:1.8rem}
+.cd2.lg{width:74px;height:106px}
+.cd2.lg .r{font-size:1.75rem}.cd2.lg .s{font-size:1.2rem}.cd2.lg .bg{font-size:2.2rem}
+button.cd2{padding:3px 4px}
+.hand{display:flex;flex-direction:column;align-items:center;padding:12px 0 4px;min-height:96px;max-width:100%}
+.hr{display:flex;justify-content:center;max-width:100%}
+.hand .cd2{width:var(--cw);height:var(--ch);flex:0 0 auto;transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s}
+.hand .cd2 .r{font-size:calc(var(--cw)*.235)}.hand .cd2 .s{font-size:calc(var(--cw)*.18)}.hand .cd2 .bg{font-size:calc(var(--cw)*.29)}
+.slots{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.slot{width:62px;height:89px;border:2px dashed var(--gray);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.4rem;color:var(--gray)}
+.xbox{border:2px solid var(--ink);background:var(--lite);padding:10px;text-align:center}
+.xp{border:2px solid var(--ink);background:var(--lite);padding:8px 10px;text-align:center;line-height:1.35;overflow-wrap:anywhere}
+.xp .xs{font-size:.8rem;color:var(--gray)}
+.xp .tg{font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gray)}
+.xst{margin-top:4px;font-family:'Courier Prime','Courier New',monospace;font-size:.78rem;font-weight:700}
+.xst.ok{color:var(--ok)}
+.hand .cd2.sel{transform:translateY(-12px);box-shadow:0 0 0 3px var(--or),0 8px 12px rgba(0,0,0,.3);z-index:2}
+.hand .cd2.dim{opacity:.4}
+@keyframes drop{from{transform:translateY(-16px) scale(1.06);opacity:0}to{transform:none;opacity:1}}
+.drop .cd2{animation:drop .24s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){.drop .cd2{animation:none}.hand .cd2{transition:none}}
+.status{font-weight:800;font-size:1rem;text-align:center;min-height:1.3em}
+.status small{font-weight:500;color:var(--gray);font-size:.85rem}
+.acts{display:flex;gap:10px;position:sticky;bottom:0;background:var(--paper);padding:6px 0 4px;z-index:3}
+@media (max-height:720px){
+  #app{gap:8px;padding-top:calc(10px + env(safe-area-inset-top))}
+  .table{min-height:84px;padding:6px;gap:4px}
+  .pile{height:116px}.pl{top:14px}
+  .cd2{width:50px;height:72px}.cd2.lg{width:58px;height:84px}.cd2 .r{font-size:1.1rem}.cd2.lg .r{font-size:1.3rem}.cd2 .bg{font-size:1.4rem}.cd2.lg .bg{font-size:1.6rem}
+  .hand{min-height:76px;padding-top:8px}.slot{width:50px;height:72px}
+  .btn{height:48px}.lh{font-size:1.9rem}
+  .chart .nd{min-height:32px}
+}
+@media (max-width:340px){.strip{gap:4px}.pn .pc{font-size:.66rem}.pn .pnm{font-size:.78rem}.cd2.lg{width:60px;height:86px}.slot{width:52px;height:75px}}
+.acts .btn{flex:1}
+.acts .pri{flex:2}
+/* chat strip + topbar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top .ttl{font-stretch:125%;font-weight:900;font-size:1.05rem}
+.top .rd{font-family:'Courier Prime','Courier New',monospace;font-size:.8rem;color:var(--gray)}
+.ib{min-width:44px;height:44px;border:2px solid var(--ink);background:var(--lite);font-weight:700;font-size:.8rem}
+.chatstrip{min-height:44px;width:100%;border:2px solid var(--ink);background:var(--lite);padding:0 12px;display:flex;align-items:center;gap:8px;text-align:left;font-size:.85rem;overflow:hidden}
+.chatstrip b{font-family:'Courier Prime','Courier New',monospace}
+.chatstrip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.chatstrip i{display:block;overflow:hidden;text-overflow:ellipsis}
+.chatstrip .dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--or)}
+/* lobby / lists */
+.sec{display:flex;flex-direction:column;gap:8px}
+.codebox{border:2px solid var(--ink);background:var(--lite);padding:10px 12px;text-align:center;width:100%}
+.codebox .c{font-family:'Courier Prime','Courier New',monospace;font-weight:700;font-size:2.6rem;letter-spacing:.3em;margin-right:-.3em;line-height:1.1}
+.emp{display:flex;align-items:center;gap:10px;min-height:48px;border:2px solid var(--ink);background:var(--lite);padding:4px 10px}
+.emp .nm{flex:1;min-width:0;font-family:'Courier Prime','Courier New',monospace;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.emp .tg{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gray)}
+.emp.bot{border-style:dashed;background:var(--paper)}
+.sel2{height:44px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);padding:0 6px;font-size:16px;font-weight:700;max-width:160px;border-radius:0}
+.x{min-width:44px;height:44px;border:0;background:none;font-weight:800;font-size:1.1rem;color:var(--rust)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:44px;padding:0 12px;border:2px solid var(--ink);background:transparent;font-weight:700;font-size:.85rem}
+.chip.on{background:var(--ink);color:var(--lite)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper .btn{height:44px;width:44px;padding:0;font-size:1.3rem}
+.stepper .v{font-weight:800;font-size:1.2rem;min-width:2ch;text-align:center}
+.note{font-size:.85rem;color:var(--gray);line-height:1.4}
+.h2{font-stretch:125%;font-weight:900;font-size:1.5rem;line-height:1.05}
+.verdict{border:3px double var(--ink);background:var(--lite);padding:16px 12px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.verdict .big{font-stretch:125%;font-weight:900;font-size:1.9rem;line-height:1.05;color:var(--rust);word-break:break-word}
+table.tl{width:100%;border-collapse:collapse;font-size:.9rem}
+table.tl th{font-family:'Courier Prime','Courier New',monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;text-align:right;color:var(--gray);padding:4px 6px;border-bottom:2px solid var(--ink)}
+table.tl th:first-child,table.tl td:first-child{text-align:left}
+table.tl td{padding:7px 6px;text-align:right;border-bottom:1px dashed var(--gray);font-weight:600}
+table.tl td:first-child{font-family:'Courier Prime','Courier New',monospace;font-weight:700;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* modal + toast */
+#modal{position:fixed;inset:0;z-index:20;display:none;background:rgba(16,21,34,.55);align-items:flex-end;justify-content:center}
+#modal.on{display:flex}
+.sheet{width:100%;max-width:480px;max-height:88vh;max-height:88dvh;overflow:auto;background:var(--paper);border:2px solid var(--ink);border-bottom:0;padding:16px 20px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;box-shadow:0 -10px 30px rgba(0,0,0,.2)}
+.sheet .hd{display:flex;justify-content:space-between;align-items:center}
+.rules{padding-left:1.1rem;margin:0;display:flex;flex-direction:column;gap:7px;font-size:.92rem;line-height:1.4}
+.log{display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow:auto;font-size:.9rem}
+.log .m b{font-family:'Courier Prime','Courier New',monospace}
+.log .sys{color:var(--gray);font-style:italic}
+.chin{display:flex;gap:8px}
+.chin input{flex:1;height:48px;border:2px solid var(--ink);background:var(--lite);padding:0 10px;font-size:1rem;border-radius:0;outline:none}
+#toast{position:fixed;left:0;right:0;bottom:calc(86px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none;z-index:30}
+.toast{background:var(--ink);color:var(--lite);padding:10px 14px;font-weight:600;font-size:.9rem;max-width:86%;text-align:center}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+<script>window.__DEMO=true</script>
+<script>
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.AEngine = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // Ranks run 3 (low) up to Ace (14) and 2 (15, the highest). A card is a suit letter plus its rank: 'S15' is the 2 of spades.
+  var SUITS = ['C', 'D', 'H', 'S'];
+  var SUIT_NAME = { S: 'Spades', H: 'Hearts', C: 'Clubs', D: 'Diamonds' };
+  var SUIT_SYM = { S: '♠', H: '♥', C: '♣', D: '♦' };
+  var TWO = 15;
+  var BOT_NAMES = ['Duke', 'Baron', 'Clerk', 'Intern', 'Boss', 'Chief', 'Temp', 'Manager', 'Auditor', 'Deputy'];
+  var TITLE = { president: 'President', vp: 'Vice President', citizen: 'Citizen', va: 'Vice Asshole', asshole: 'Asshole' };
+
+  function rnd(n) { return Math.floor(Math.random() * n); }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = rnd(i + 1); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function newDeck() {
+    var d = [];
+    SUITS.forEach(function (s) { for (var r = 3; r <= 15; r++) d.push(s + r); });
+    return d;
+  }
+  function suitOf(c) { return c[0]; }
+  function rankOf(c) { return +c.slice(1); }
+  function rankLabel(r) { return r === 15 ? '2' : r === 14 ? 'A' : r === 13 ? 'K' : r === 12 ? 'Q' : r === 11 ? 'J' : String(r); }
+  function cardLabel(c) { return rankLabel(rankOf(c)) + SUIT_SYM[suitOf(c)]; }
+  function sortHand(h) {
+    return h.slice().sort(function (a, b) { return rankOf(a) - rankOf(b) || SUITS.indexOf(suitOf(a)) - SUITS.indexOf(suitOf(b)); });
+  }
+  function cleanName(name) {
+    return Array.from(String(name || '').replace(/\s+/g, ' ').trim()).slice(0, 16).join('');
+  }
+
+  // Titles by finishing position. Up to 6 players: President, Citizens, Asshole.
+  // From 6 players the Vice President and Vice Asshole join in.
+  var VICE_FROM = 6;
+  function titlesFor(n) {
+    var t = [];
+    for (var i = 0; i < n; i++) {
+      if (i === 0) t.push('president');
+      else if (i === n - 1) t.push('asshole');
+      else if (n >= VICE_FROM && i === 1) t.push('vp');
+      else if (n >= VICE_FROM && i === n - 2) t.push('va');
+      else t.push('citizen');
+    }
+    return t;
+  }
+
+  // null when the cards are a legal play on this trick, else the reason they are not.
+  // trick: null (leading) or { count, rank }.
+  function playError(cards, trick) {
+    if (!cards || !cards.length) return 'Pick a card first';
+    var r = rankOf(cards[0]);
+    for (var i = 1; i < cards.length; i++) if (rankOf(cards[i]) !== r) return 'Play cards of one rank';
+    if (trick) {
+      if (cards.length !== trick.count) return 'Play ' + trick.count + (trick.count === 1 ? ' card' : ' cards');
+      // a 2 is the highest card but it does not end the trick: another 2 can still go on top of it
+      if (r <= trick.rank && !(r === TWO && trick.rank === TWO)) return 'Play higher than ' + rankLabel(trick.rank);
+    }
+    return null;
+  }
+
+  function groups(hand) {
+    var g = {};
+    hand.forEach(function (c) { (g[rankOf(c)] = g[rankOf(c)] || []).push(c); });
+    return g;
+  }
+
+  // ---- Bots ----
+  var Bot = {
+    // Plays the lowest set that beats the trick, saves 2s, and passes when the only way to beat it would waste a 2.
+    // Returns an array of cards, or null to pass. level: easy | medium | hard. ctx: { minOpp }.
+    play: function (hand, trick, level, ctx) {
+      ctx = ctx || {};
+      var g = groups(hand), ranks = Object.keys(g).map(Number).sort(function (a, b) { return a - b; });
+      var nonTwo = hand.filter(function (c) { return rankOf(c) !== TWO; }).length;
+      var minOpp = ctx.minOpp == null ? 99 : ctx.minOpp;
+      var i;
+      if (!trick) {
+        if (ranks.length === 1) return g[ranks[0]].slice();
+        // Hard: when someone is nearly out, lead strong to keep control instead of feeding them
+        if (level === 'hard' && minOpp <= 2) {
+          var strong = ranks.filter(function (r) { return r !== TWO; });
+          if (strong.length) return g[strong[strong.length - 1]].slice();
+        }
+        // lead the lowest rank, as a whole set (a lone 2 is never led while anything else is left)
+        for (i = 0; i < ranks.length; i++) if (ranks[i] !== TWO || ranks.length === 1) return g[ranks[i]].slice();
+        return g[ranks[0]].slice();
+      }
+      var opts = ranks.filter(function (r) { return (r > trick.rank || (r === TWO && trick.rank === TWO)) && g[r].length >= trick.count; });
+      if (!opts.length) return null;
+      if (level === 'easy' && Math.random() < 0.3) return null;
+      var best = null, bs = 1e9;
+      opts.forEach(function (r) {
+        var s = r + (g[r].length - trick.count) * 1.5;   // prefer not to break up a bigger set
+        if (s < bs) { bs = s; best = r; }
+      });
+      if (level !== 'easy' && best === TWO && nonTwo >= 4 && minOpp > 2) return null;   // keep the 2 for later
+      if (level === 'hard' && best >= 13 && nonTwo >= 5 && minOpp > 3 && trick.count === 1 && Math.random() < 0.5) return null;
+      return g[best].slice(0, trick.count);
+    },
+    // What a President or Vice President hands down: their k lowest cards.
+    give: function (hand, k) { return sortHand(hand).slice(0, k); },
+    // What an Asshole or Vice Asshole hands up: their k best cards.
+    best: function (hand, k) { return sortHand(hand).slice(-k); }
+  };
+
+  // null when `cards` are a legal hand-down. The Asshole side has to give the k highest cards it holds,
+  // the President side may only give its k lowest (ties in rank can go in any suit).
+  function exchangeError(hand, cards, k, mode) {
+    if (!Array.isArray(cards) || cards.length !== k) return 'Pick ' + k + (k === 1 ? ' card' : ' cards') + ' to give';
+    var seen = {}, i;
+    for (i = 0; i < cards.length; i++) {
+      if (typeof cards[i] !== 'string' || seen[cards[i]] || hand.indexOf(cards[i]) < 0) return 'You do not hold that card';
+      seen[cards[i]] = 1;
+    }
+    var dir = mode === 'best' ? function (a, b) { return b - a; } : function (a, b) { return a - b; };
+    var want = hand.map(rankOf).sort(dir).slice(0, k), got = cards.map(rankOf).sort(dir);
+    for (i = 0; i < k; i++) {
+      if (want[i] !== got[i]) {
+        return mode === 'best'
+          ? 'You have to give your ' + (k === 1 ? 'highest card' : k + ' highest cards')
+          : 'You can only give your ' + (k === 1 ? 'lowest card' : k + ' lowest cards');
+      }
+    }
+    return null;
+  }
+
+  function Game(code, opts) {
+    opts = opts || {};
+    this.code = code;
+    this.fast = !!opts.fast;
+    this.players = [];
+    this.size = 5;
+    this.phase = 'lobby';       // lobby | exchange | xdone | playing | trickdone | roundover | gameover
+    this.hostId = null;
+    this.nextId = 1;
+    this.n = 0;
+    this.round = 0;
+    this.turnIdx = 0;
+    this.trick = null;          // { count, rank, plays: [{ pid, cards }] }
+    this.passed = [];
+    this.lastPid = null;
+    this.trickWinner = null;
+    this.trickEndRound = false;
+    this.finishOrder = [];
+    this.prevOrder = null;
+    this.titles = {};
+    this.history = [];
+    this.pending = [];          // this round's card swaps: { hi, lo, k, hiGive, loGive, done }
+    this.rolesMode = false;     // host picks the starting titles (to carry on a game after everyone dropped)
+    this.timer = null;
+    this.ttimer = null;
+    this.schedKey = null;
+    this.timerSec = 0;          // turn timer: 0 = off, else 30/45/60/120
+    this.botLevel = 'medium';
+    this.seq = 0;
+    this.timerScale = 1;
+    this.turnEnd = null;
+    this.chat = [];
+    this.chatSeq = 0;
+    this.closed = false;
+    this.touched = Date.now();
+    this.onChange = function () {};
+    this.onKick = function () {};
+  }
+
+  Game.prototype.humans = function () { return this.players.filter(function (p) { return !p.bot; }); };
+  Game.prototype.byId = function (id) { return this.players.filter(function (p) { return p.id === id; })[0]; };
+  Game.prototype.byToken = function (t) { return t ? this.players.filter(function (p) { return p.token === t; })[0] : undefined; };
+  Game.prototype.idxOf = function (id) { for (var i = 0; i < this.players.length; i++) if (this.players[i].id === id) return i; return -1; };
+
+  Game.prototype.uniqueName = function (name, exceptId) {
+    var base = cleanName(name), n = base, k = 2, self = this;
+    var taken = function (x) {
+      return self.players.some(function (p) { return p.id !== exceptId && p.name.toLowerCase() === x.toLowerCase(); });
+    };
+    while (taken(n)) { n = base.slice(0, 14) + ' ' + k; k++; }
+    return n;
+  };
+
+  function newTally() { return { president: 0, vp: 0, citizen: 0, va: 0, asshole: 0, rounds: 0 }; }
+
+  Game.prototype.addHuman = function (name, token) {
+    if (this.phase !== 'lobby') return { err: 'That game has already started' };
+    if (this.humans().length >= 8) return { err: 'Table is full' };
+    if (!cleanName(name)) return { err: 'Enter your name' };
+    var p = { id: this.nextId++, name: this.uniqueName(name), bot: false, token: token || null, connected: true, hand: [], tally: newTally() };
+    this.players.push(p);
+    if (!this.hostId) this.hostId = p.id;
+    if (this.humans().length > this.size) this.size = this.humans().length;
+    this.emit();
+    return { ok: true, pid: p.id };
+  };
+
+  Game.prototype.setConnected = function (pid, v) {
+    var p = this.byId(pid);
+    if (!p || p.bot || p.connected === v) return;
+    p.connected = v;
+    this.emit();
+  };
+
+  Game.prototype.emit = function () {
+    this.touched = Date.now();
+    this.seq++;
+    this.schedule();
+    this.onChange();
+  };
+
+  Game.prototype.reassignHost = function () {
+    var h = this.humans().filter(function (p) { return p.connected; })[0] || this.humans()[0];
+    this.hostId = h ? h.id : null;
+    if (!h) this.closed = true;
+  };
+
+  Game.prototype.pushChat = function (pid, name, text, sys) {
+    this.chat.push({ id: ++this.chatSeq, pid: pid, name: name, text: text, sys: !!sys });
+    if (this.chat.length > 80) this.chat.splice(0, this.chat.length - 80);
+  };
+
+  Game.prototype.act = function (pid, a) {
+    var p = this.byId(pid);
+    if (!p || !a) return { err: 'Not in this room' };
+    var isHost = pid === this.hostId;
+    switch (a.type) {
+      case 'rename': {
+        if (!cleanName(a.name)) return { err: 'Enter a name' };
+        p.name = this.uniqueName(a.name, pid);
+        this.emit();
+        return { ok: true };
+      }
+      case 'size': {
+        if (!isHost || this.phase !== 'lobby') return { err: 'Only the host can do that' };
+        var want = parseInt(a.size, 10);
+        if (isNaN(want)) return { err: 'Bad size' };
+        this.size = Math.max(3, this.humans().length, Math.min(8, want));
+        this.emit();
+        return { ok: true };
+      }
+      case 'timer': {
+        if (!isHost) return { err: 'Only the host can do that' };
+        var ts = parseInt(a.sec, 10);
+        if ([0, 30, 45, 60, 120].indexOf(ts) < 0) return { err: 'Bad timer' };
+        this.timerSec = ts;
+        this.emit();
+        return { ok: true };
+      }
+      case 'level': {
+        if (!isHost) return { err: 'Only the host can do that' };
+        if (['easy', 'medium', 'hard'].indexOf(a.level) < 0) return { err: 'Bad level' };
+        this.botLevel = a.level;
+        this.emit();
+        return { ok: true };
+      }
+      case 'chat': {
+        var text = String(a.text || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+        if (!text) return { err: 'Type a message first' };
+        var now = Date.now();
+        if (p.lastChat && now - p.lastChat < 350) return { err: 'Slow down' };
+        p.lastChat = now;
+        this.pushChat(p.id, p.name, text, false);
+        this.emit();
+        return { ok: true };
+      }
+      case 'kick': {
+        if (!isHost) return { err: 'Only the host can do that' };
+        var t = this.byId(a.pid);
+        if (!t || t.bot || t.id === pid) return { err: 'Cannot remove that player' };
+        this.removeHuman(t, true);
+        return { ok: true };
+      }
+      case 'leave': {
+        this.removeHuman(p, false);
+        return { ok: true };
+      }
+      case 'start': {
+        if (!isHost || this.phase !== 'lobby') return { err: 'Only the host can start' };
+        if (Math.max(this.size, this.humans().length) < 3) return { err: 'Need at least 3 players. Add a bot.' };
+        var re = this.rolesMode ? this.rolesProblem() : null;
+        if (re) return { err: re };
+        this.begin();
+        return { ok: true };
+      }
+      case 'roles': {
+        if (!isHost || this.phase !== 'lobby') return { err: 'Only the host can do that' };
+        this.rolesMode = !!a.on;
+        if (!this.rolesMode) this.players.forEach(function (x) { x.role = null; });
+        this.emit();
+        return { ok: true };
+      }
+      case 'setrole': {
+        if (!isHost || this.phase !== 'lobby' || !this.rolesMode) return { err: 'Only the host can do that' };
+        var tp = this.byId(a.pid);
+        if (!tp || tp.bot) return { err: 'Pick a player' };
+        var role = a.role || null;
+        if (role !== null && ['president', 'vp', 'citizen', 'va', 'asshole'].indexOf(role) < 0) return { err: 'Bad title' };
+        if (role === 'citizen') role = null;
+        // President, VP, Vice Asshole and Asshole each belong to one person
+        if (role) this.players.forEach(function (x) { if (x.role === role) x.role = null; });
+        tp.role = role;
+        this.emit();
+        return { ok: true };
+      }
+      case 'play': return this.doPlay(p, a.cards);
+      case 'pass': return this.doPass(p);
+      case 'give': return this.doGive(p, a.cards);
+      case 'go': {
+        if (this.phase !== 'xdone') return { ok: true };   // someone else already carried on
+        clearTimeout(this.ttimer);
+        this.beginPlay();
+        return { ok: true };
+      }
+      case 'next': {
+        if (this.phase !== 'roundover') return { ok: true };   // someone else already dealt
+        this.startRound();
+        return { ok: true };
+      }
+      case 'finish': {
+        if (!isHost || this.phase !== 'roundover') return { err: 'Only the host can do that' };
+        this.phase = 'gameover';
+        this.emit();
+        return { ok: true };
+      }
+      case 'again': {
+        if (!isHost || this.phase !== 'gameover') return { err: 'Only the host can do that' };
+        this.players = this.players.filter(function (x) { return !x.bot; });
+        this.players.forEach(function (x) { x.hand = []; x.tally = newTally(); x.role = null; });
+        this.rolesMode = false;
+        this.history = []; this.titles = {}; this.prevOrder = null; this.finishOrder = [];
+        this.trick = null; this.passed = []; this.pending = []; this.round = 0;
+        this.schedKey = null; this.turnEnd = null;
+        this.phase = 'lobby';
+        this.emit();
+        return { ok: true };
+      }
+    }
+    return { err: 'Unknown action' };
+  };
+
+  Game.prototype.removeHuman = function (t, kicked) {
+    var token = t.token;
+    if (this.phase === 'lobby') {
+      this.players = this.players.filter(function (x) { return x.id !== t.id; });
+    } else {
+      t.bot = true; t.token = null; t.connected = true;
+      if (this.phase === 'exchange') { this.autoBotSides(); this.settleExchange(); }
+    }
+    if (this.hostId === t.id) this.reassignHost();
+    this.onKick(t.id, token, kicked);
+    if (!this.humans().length) this.closed = true;
+    this.emit();
+  };
+
+  Game.prototype.begin = function () {
+    var humans = this.humans();
+    var n = Math.max(this.size, humans.length);
+    var used = {};
+    humans.forEach(function (p) { used[p.name.toLowerCase()] = 1; });
+    var pool = shuffle(BOT_NAMES.slice()).filter(function (x) { return !used[x.toLowerCase()]; });
+    var bots = [];
+    for (var i = 0; i < n - humans.length; i++) {
+      bots.push({ id: this.nextId++, name: pool[i] || ('Bot ' + (i + 1)), bot: true, token: null, connected: true, hand: [], tally: newTally() });
+    }
+    this.players = shuffle(humans.concat(bots));
+    this.n = n;
+    this.round = 0;
+    this.history = [];
+    this.titles = {};
+    this.prevOrder = null;
+    if (this.rolesMode) this.seedRoles();
+    this.startRound();
+  };
+
+  // The titles that must be held for the card hand-downs to work: all four from 7 players up, else President and Asshole.
+  Game.prototype.neededRoles = function () {
+    var n = Math.max(this.size, this.humans().length);
+    return n >= VICE_FROM ? ['president', 'vp', 'va', 'asshole'] : ['president', 'asshole'];
+  };
+
+  // null when the chosen titles can start a game; bots take any title nobody picked
+  Game.prototype.rolesProblem = function () {
+    var n = Math.max(this.size, this.humans().length), need = this.neededRoles(), humans = this.humans();
+    var held = humans.filter(function (p) { return p.role; });
+    if (n < VICE_FROM && held.some(function (p) { return p.role === 'vp' || p.role === 'va'; })) return 'The vice titles only apply from ' + VICE_FROM + ' players';
+    var open = need.filter(function (r) { return !held.some(function (p) { return p.role === r; }); });
+    if (open.length > n - humans.length) return 'Give out every title first (bots can take the ones left)';
+    return null;
+  };
+
+  // Turns the picked titles into last round's finishing order, so round one starts with the hand-downs.
+  Game.prototype.seedRoles = function () {
+    var need = this.neededRoles(), self = this;
+    var role = {};
+    this.players.forEach(function (p) { if (!p.bot && p.role && need.indexOf(p.role) >= 0) role[p.role] = p; });
+    var free = shuffle(this.players.filter(function (p) { return p.bot; }));
+    need.forEach(function (r) { if (!role[r]) role[r] = free.pop(); });
+    var used = {};
+    need.forEach(function (r) { used[role[r].id] = 1; });
+    var mid = shuffle(this.players.filter(function (p) { return !used[p.id]; })).map(function (p) { return p.id; });
+    var order = [role.president.id];
+    if (need.length === 4) order.push(role.vp.id);
+    order = order.concat(mid);
+    if (need.length === 4) order.push(role.va.id);
+    order.push(role.asshole.id);
+    var titles = titlesFor(this.n);
+    this.prevOrder = order;
+    order.forEach(function (pid, i) { self.titles[pid] = titles[i]; });
+    this.players.forEach(function (p) { p.role = null; });
+  };
+
+  Game.prototype.startRound = function () {
+    var n = this.n, d = shuffle(newDeck());
+    this.players.forEach(function (p) { p.hand = []; });
+    for (var k = 0; k < d.length; k++) this.players[k % n].hand.push(d[k]);
+    this.players.forEach(function (p) { p.hand = sortHand(p.hand); });
+    this.round++;
+    this.trick = null; this.passed = []; this.lastPid = null; this.trickWinner = null; this.trickEndRound = false;
+    this.finishOrder = []; this.pending = [];
+    var self = this;
+    if (this.prevOrder) {
+      // Asshole and President swap 3 cards and the vices swap 2 once there are vice titles (6+ players);
+      // with 4 or 5 players it is just the President and Asshole swapping 2, with 3 players 1
+      var order = this.prevOrder, k1 = n >= VICE_FROM ? 3 : (n >= 4 ? 2 : 1);
+      var pairs = [{ hi: order[0], lo: order[n - 1], k: k1 }];
+      if (n >= VICE_FROM) pairs.push({ hi: order[1], lo: order[n - 2], k: 2 });
+      pairs.forEach(function (pr) { pr.hiGive = null; pr.loGive = null; pr.done = false; });
+      this.pending = pairs;
+      this.phase = 'exchange';
+      this.autoBotSides();
+      this.settleExchange();
+      this.emit();
+      return;
+    }
+    this.beginPlay();
+  };
+
+  // Bots hand over their cards at once: the lowest titles their best, the highest titles their worst.
+  Game.prototype.autoBotSides = function () {
+    var self = this;
+    this.pending.forEach(function (pr) {
+      if (pr.done) return;
+      var hi = self.byId(pr.hi), lo = self.byId(pr.lo);
+      if (hi.bot && !pr.hiGive) pr.hiGive = Bot.give(hi.hand, pr.k);
+      if (lo.bot && !pr.loGive) pr.loGive = Bot.best(lo.hand, pr.k);
+      self.swapIfReady(pr);
+    });
+  };
+
+  Game.prototype.swapIfReady = function (pr) {
+    if (pr.done || !pr.hiGive || !pr.loGive) return;
+    var hi = this.byId(pr.hi), lo = this.byId(pr.lo), a = pr.hiGive, b = pr.loGive;
+    hi.hand = sortHand(hi.hand.filter(function (c) { return a.indexOf(c) < 0; }).concat(b));
+    lo.hand = sortHand(lo.hand.filter(function (c) { return b.indexOf(c) < 0; }).concat(a));
+    pr.done = true;
+    this.pushChat(null, '', hi.name + ' (' + TITLE[this.titles[hi.id]] + ') and ' + lo.name + ' (' + TITLE[this.titles[lo.id]] + ') swapped ' + pr.k + (pr.k === 1 ? ' card' : ' cards'), true);
+  };
+
+  // Once every swap is done the table pauses on the result so each side can see what they gave and got.
+  Game.prototype.settleExchange = function () {
+    if (this.phase !== 'exchange' || !this.pending.every(function (x) { return x.done; })) return;
+    this.phase = 'xdone';
+    var self = this;
+    clearTimeout(this.ttimer);
+    this.ttimer = setTimeout(function () { if (self.phase === 'xdone') self.beginPlay(); }, this.fast ? 1 : 10000);
+  };
+
+  Game.prototype.exchangeWaiting = function () {
+    var w = [], self = this;
+    this.pending.forEach(function (pr) {
+      if (pr.done) return;
+      var hi = self.byId(pr.hi), lo = self.byId(pr.lo);
+      if (!hi.bot && !pr.hiGive) w.push({ pr: pr, side: 'hi', p: hi });
+      if (!lo.bot && !pr.loGive) w.push({ pr: pr, side: 'lo', p: lo });
+    });
+    return w;
+  };
+
+  // A human who is away (or ran out of time) is handed the legal choice automatically.
+  Game.prototype.autoExchange = function (everyone) {
+    var self = this;
+    this.exchangeWaiting().forEach(function (x) {
+      if (!everyone && x.p.connected) return;
+      x.pr[x.side + 'Give'] = x.side === 'hi' ? Bot.give(x.p.hand, x.pr.k) : Bot.best(x.p.hand, x.pr.k);
+      self.swapIfReady(x.pr);
+    });
+    this.settleExchange();
+    this.emit();
+  };
+
+  Game.prototype.beginPlay = function () {
+    var n = this.n, idx = 0, i;
+    if (this.prevOrder) idx = this.idxOf(this.prevOrder[n - 1]);       // the Asshole leads
+    else for (i = 0; i < n; i++) if (this.players[i].hand.indexOf('C3') >= 0) idx = i;   // first round: the 3 of clubs
+    this.turnIdx = idx;
+    this.phase = 'playing';
+    this.emit();
+  };
+
+  // A President (or VP) picks their lowest cards to hand down, an Asshole (or VA) their best to hand up.
+  Game.prototype.doGive = function (p, cards) {
+    if (this.phase !== 'exchange') return { err: 'Not now' };
+    var w = this.exchangeWaiting().filter(function (x) { return x.p.id === p.id; })[0];
+    if (!w) return { err: 'Not now' };
+    var bad = exchangeError(p.hand, cards, w.pr.k, w.side === 'hi' ? 'worst' : 'best');
+    if (bad) return { err: bad };
+    w.pr[w.side + 'Give'] = cards.slice();
+    this.swapIfReady(w.pr);
+    this.settleExchange();
+    this.emit();
+    return { ok: true };
+  };
+
+  // next seat (after `from`) that still holds cards and has not passed this lap
+  Game.prototype.nextActive = function (from, skipPid) {
+    for (var i = 1; i < this.n; i++) {
+      var idx = (from + i) % this.n, pl = this.players[idx];
+      if (pl.hand.length && this.passed.indexOf(pl.id) < 0 && pl.id !== skipPid) return idx;
+    }
+    return -1;
+  };
+  Game.prototype.nextWithCards = function (from) {
+    for (var i = 1; i <= this.n; i++) {
+      var idx = (from + i) % this.n;
+      if (this.players[idx].hand.length) return idx;
+    }
+    return from;
+  };
+
+  Game.prototype.doPlay = function (p, cards) {
+    if (this.phase !== 'playing' || this.players[this.turnIdx].id !== p.id) return { err: 'Not your turn' };
+    if (!Array.isArray(cards) || !cards.length) return { err: 'Pick a card first' };
+    var seen = {};
+    for (var i = 0; i < cards.length; i++) {
+      if (typeof cards[i] !== 'string' || seen[cards[i]] || p.hand.indexOf(cards[i]) < 0) return { err: 'You do not hold that card' };
+      seen[cards[i]] = 1;
+    }
+    var bad = playError(cards, this.trick);
+    if (bad) return { err: bad };
+    p.hand = p.hand.filter(function (c) { return cards.indexOf(c) < 0; });
+    var rank = rankOf(cards[0]);
+    if (!this.trick) this.trick = { count: cards.length, rank: rank, plays: [], lead: p.id };
+    this.trick.rank = rank;
+    this.trick.plays.push({ pid: p.id, cards: sortHand(cards) });
+    if (this.trick.plays.length > 6) this.trick.plays.shift();
+    this.lastPid = p.id;
+    this.passed = [];
+    if (!p.hand.length) {
+      this.finishOrder.push(p.id);
+      var t = titlesFor(this.n)[this.finishOrder.length - 1];
+      this.pushChat(null, '', p.name + ' is out: ' + (this.finishOrder.length === this.n ? 'last' : TITLE[t]), true);
+    }
+    var remaining = this.players.filter(function (x) { return x.hand.length > 0; });
+    if (remaining.length <= 1) {
+      if (remaining.length === 1) this.finishOrder.push(remaining[0].id);
+      return this.holdTrick(p.id, true);
+    }
+    var next = this.nextActive(this.turnIdx, null);   // a 2 does not win the trick: only everyone else passing does
+    if (next < 0) return this.holdTrick(p.id, false);
+    this.turnIdx = next;
+    this.emit();
+    return { ok: true };
+  };
+
+  Game.prototype.doPass = function (p) {
+    if (this.phase !== 'playing' || this.players[this.turnIdx].id !== p.id) return { err: 'Not your turn' };
+    if (!this.trick) return { err: 'You have to lead' };
+    this.passed.push(p.id);
+    var next = this.nextActive(this.turnIdx, this.lastPid);
+    if (next < 0) return this.holdTrick(this.lastPid, false);
+    this.turnIdx = next;
+    this.emit();
+    return { ok: true };
+  };
+
+  // The trick is over: show it for a moment, then the winner leads (or the round ends).
+  Game.prototype.holdTrick = function (winnerPid, roundOver) {
+    this.phase = 'trickdone';
+    this.trickWinner = winnerPid;
+    this.trickEndRound = roundOver;
+    this.emit();
+    var self = this;
+    clearTimeout(this.ttimer);
+    this.ttimer = setTimeout(function () { self.afterTrick(); }, this.fast ? 1 : (roundOver ? 2600 : 1500));
+    return { ok: true };
+  };
+
+  Game.prototype.afterTrick = function () {
+    if (this.phase !== 'trickdone') return;
+    if (this.trickEndRound) { this.endRound(); return; }
+    var wi = this.idxOf(this.trickWinner);
+    this.turnIdx = this.players[wi].hand.length ? wi : this.nextWithCards(wi);
+    this.trick = null; this.passed = []; this.trickWinner = null; this.lastPid = null;
+    this.phase = 'playing';
+    this.emit();
+  };
+
+  Game.prototype.endRound = function () {
+    var self = this, titles = titlesFor(this.n);
+    this.titles = {};
+    this.finishOrder.forEach(function (pid, i) {
+      var p = self.byId(pid);
+      self.titles[pid] = titles[i];
+      p.tally[titles[i] === 'citizen' ? 'citizen' : titles[i]]++;
+      p.tally.rounds++;
+    });
+    this.history.push({ round: this.round, order: this.finishOrder.slice(), titles: titles.slice() });
+    if (this.history.length > 30) this.history.shift();
+    this.prevOrder = this.finishOrder.slice();
+    this.trick = null; this.passed = []; this.trickWinner = null; this.lastPid = null; this.trickEndRound = false;
+    this.phase = 'roundover';
+    this.emit();
+  };
+
+  // Arms one timer per turn (or per hand-down). Chat, renames etc. call emit() too, so the timer is only
+  // re-armed when the thing being waited on changes.
+  Game.prototype.schedule = function () {
+    var cur = null, key = null, exAway = false;
+    if (this.phase === 'playing') {
+      cur = this.players[this.turnIdx];
+      key = ['p', this.round, this.turnIdx, this.trick ? this.trick.plays.length : 0, this.passed.length, cur.id, cur.bot ? 1 : 0, cur.connected ? 1 : 0, this.timerSec].join('|');
+    } else if (this.phase === 'exchange') {
+      var waiting = this.exchangeWaiting();
+      if (waiting.length) {
+        cur = waiting[0].p;
+        exAway = waiting.some(function (x) { return !x.p.connected; });
+        key = ['x', this.round, waiting.map(function (x) { return x.p.id + (x.p.connected ? 'c' : 'd'); }).join(','), this.timerSec].join('|');
+      }
+    }
+    if (!cur) {
+      clearTimeout(this.timer); this.timer = null; this.schedKey = null; this.turnEnd = null;
+      return;
+    }
+    if (key === this.schedKey && this.timer) return;
+    clearTimeout(this.timer); this.timer = null;
+    this.schedKey = key; this.turnEnd = null;
+    var delay, timed = false;
+    if (cur.bot) delay = this.fast ? 1 : 700 + rnd(600);
+    else if (!cur.connected || exAway) delay = this.fast ? 1 : (this.autoMs || 25000);
+    else if (this.timerSec) { delay = this.timerSec * 1000 * this.timerScale; timed = true; }
+    else return;
+    if (timed) this.turnEnd = Date.now() + delay;
+    var self = this, exchanging = this.phase === 'exchange';
+    this.timer = setTimeout(function () {
+      self.timer = null; self.schedKey = null;
+      if (exchanging) {
+        if (self.phase !== 'exchange') return;
+        if (timed) self.pushChat(null, '', 'Time’s up: the card swap was done automatically', true);
+        self.autoExchange(timed);
+        return;
+      }
+      if (timed && !cur.bot) self.pushChat(null, '', 'Time’s up for ' + cur.name + ': played automatically', true);
+      self.botAct(cur.id);
+    }, delay);
+  };
+
+  Game.prototype.botAct = function (pid) {
+    var cur = this.byId(pid);
+    if (!cur) return;
+    var level = cur.bot ? this.botLevel : 'medium';   // a human who ran out of time (or is away) is played for at Medium
+    if (this.phase !== 'playing' || this.players[this.turnIdx].id !== pid) return;
+    var minOpp = 99;
+    this.players.forEach(function (x) { if (x.id !== pid && x.hand.length && x.hand.length < minOpp) minOpp = x.hand.length; });
+    var mv = Bot.play(cur.hand, this.trick, level, { minOpp: minOpp });
+    if (mv) this.doPlay(cur, mv); else this.doPass(cur);
+  };
+
+  Game.prototype.destroy = function () {
+    clearTimeout(this.timer); clearTimeout(this.ttimer);
+  };
+
+  // The night's verdict: most Asshole rounds is the Asshole of the night (fewest Presidencies breaks a tie).
+  Game.prototype.verdict = function () {
+    var ps = this.players.filter(function (p) { return p.tally.rounds > 0; });
+    if (!ps.length) return { asshole: [], president: [] };
+    var maxA = Math.max.apply(null, ps.map(function (p) { return p.tally.asshole; }));
+    var cand = ps.filter(function (p) { return p.tally.asshole === maxA; });
+    var minP = Math.min.apply(null, cand.map(function (p) { return p.tally.president; }));
+    var maxP = Math.max.apply(null, ps.map(function (p) { return p.tally.president; }));
+    return {
+      asshole: cand.filter(function (p) { return p.tally.president === minP; }).map(function (p) { return p.id; }),
+      president: ps.filter(function (p) { return p.tally.president === maxP; }).map(function (p) { return p.id; })
+    };
+  };
+
+  Game.prototype.snapshot = function (pid) {
+    var me = this.byId(pid);
+    var inGame = this.phase !== 'lobby';
+    var humans = this.humans();
+    var n = inGame ? this.n : Math.max(this.size, humans.length);
+    var self = this;
+    var turn = this.phase === 'playing' && this.players[this.turnIdx] ? this.players[this.turnIdx].id : null;
+    // the card swap, seen from this player: what they must give, and (once both sides are in) what they gave and got
+    var xchg = null;
+    if (this.phase === 'exchange' || this.phase === 'xdone') {
+      var mine = null;
+      this.pending.forEach(function (pr) {
+        var side = pr.hi === pid ? 'hi' : pr.lo === pid ? 'lo' : null;
+        if (!side) return;
+        var my = side === 'hi' ? pr.hiGive : pr.loGive, other = side === 'hi' ? pr.loGive : pr.hiGive;
+        mine = { side: side, k: pr.k, other: side === 'hi' ? pr.lo : pr.hi, mode: side === 'hi' ? 'worst' : 'best',
+          submitted: !!my, gave: my || null, got: pr.done ? other : null, done: pr.done };
+      });
+      xchg = {
+        done: this.phase === 'xdone', mine: mine,
+        pairs: this.pending.map(function (pr) { return { hi: pr.hi, lo: pr.lo, k: pr.k, hiDone: !!pr.hiGive, loDone: !!pr.loGive, done: pr.done }; })
+      };
+    }
+    var s = {
+      code: this.code, phase: this.phase, me: pid, host: this.hostId,
+      size: this.size, n: n, round: this.round,
+      botCount: inGame ? this.players.filter(function (p) { return p.bot; }).length : n - humans.length,
+      players: this.players.map(function (p) {
+        var fo = self.finishOrder.indexOf(p.id);
+        return {
+          id: p.id, name: p.name, bot: p.bot, connected: p.connected, cards: p.hand.length,
+          title: self.titles[p.id] || null, out: fo >= 0 ? fo + 1 : null,
+          passed: self.passed.indexOf(p.id) >= 0, tally: p.tally, role: p.role || null
+        };
+      }),
+      rolesMode: this.rolesMode, rolesNeed: this.neededRoles(),
+      turn: turn, trick: this.trick ? { count: this.trick.count, rank: this.trick.rank, plays: this.trick.plays, lead: this.trick.lead } : null,
+      lastPid: this.lastPid, trickWinner: this.trickWinner, roundEnds: this.trickEndRound,
+      order: this.phase === 'roundover' || this.phase === 'gameover' ? this.prevOrder : null,
+      history: this.history.slice(-8),
+      hand: me && inGame ? me.hand : [], xchg: xchg,
+      verdict: this.phase === 'gameover' ? this.verdict() : null,
+      timerSec: this.timerSec, botLevel: this.botLevel, seq: this.seq,
+      turnLeft: this.turnEnd && (this.phase === 'playing' || this.phase === 'exchange') ? Math.max(0, this.turnEnd - Date.now()) : null,
+      chat: this.chat.slice(-50)
+    };
+    return s;
+  };
+
+  return {
+    Game: Game, Bot: Bot, SUITS: SUITS, SUIT_NAME: SUIT_NAME, SUIT_SYM: SUIT_SYM, TITLE: TITLE, TWO: TWO,
+    suitOf: suitOf, rankOf: rankOf, rankLabel: rankLabel, cardLabel: cardLabel, sortHand: sortHand, playError: playError, exchangeError: exchangeError,
+    titlesFor: titlesFor, VICE_FROM: VICE_FROM, newDeck: newDeck, shuffle: shuffle, cleanName: cleanName, groups: groups
+  };
+});
+
+</script>
+<script>
+(function(){
+'use strict';
+var E=window.AEngine;
+var DEMO=!!window.__DEMO;
+var VER='v1 · Ishan Atul’s render';
+var SIZES=['Normal','Large','Larger'];
+var FS=[16,18,20];
+var TIMERS=[0,30,45,60,120];
+var LEVELS=[['easy','Easy'],['medium','Medium'],['hard','Hard']];
+var TITLE=E.TITLE, SY=E.SUIT_SYM;
+var ROLE_OPTS=[['citizen','Citizen'],['president','President'],['vp','Vice President'],['va','Vice Asshole'],['asshole','Asshole']];
+function timerLabel(t){return !t?'Off':t<60?t+' s':(t/60)+' min'}
+
+function $(s){return document.querySelector(s)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+var THEMES=[['paper','Paper'],['night','Night'],['felt','Felt'],['blue','Blue']];
+var ui=Object.assign({fs:0,theme:'paper'},load('ah_ui',{}));
+var snap=null,me=null,game=null,es=null,sess=load('ah_sess',null),isLocal=false;
+var modal=null,errMsg='',sel=[],chatOpen=false,chatSeen=0,turnDeadline=null,animKey='',lastAnim='';
+var savedName=load('ah_name','');
+var busy=false;   // a create/join request is in flight: a second tap must not open a second room
+var hName=savedName,hCode='',hRoles=false;
+try{var qr=new URLSearchParams(location.search).get('r');if(qr)hCode=qr.toUpperCase().slice(0,4)}catch(e){}
+
+function applyUI(){
+  var h=document.documentElement;
+  if(!THEMES.some(function(t){return t[0]===ui.theme}))ui.theme='paper';
+  h.dataset.theme=ui.theme;h.style.setProperty('--fs',FS[ui.fs]+'px');
+  var m=document.querySelector('meta[name=theme-color]'),bg=getComputedStyle(h).getPropertyValue('--paper').trim();
+  if(m&&bg)m.setAttribute('content',bg);
+  save('ah_ui',{fs:ui.fs,theme:ui.theme});
+}
+function toast(t){var el=$('#toast');el.innerHTML='<div class="toast">'+esc(t)+'</div>';clearTimeout(toast.t);toast.t=setTimeout(function(){el.innerHTML=''},2600)}
+
+/* ---------- transport (same connection handling as Judgement v1) ---------- */
+function api(path,body){return fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json()})}
+var seq=-1,lastSse=0,conn='ok',failN=0,pollT=null,rtt=null,syncing=false,lastTry=0;
+function connText(){
+  if(conn==='off')return 'Offline. Waiting for the network…';
+  if(conn==='wait')return 'Reconnecting…';
+  return 'Connected'+(rtt!=null?' · '+rtt+' ms'+(rtt>800?' (slow)':''):'');
+}
+function paintConn(){
+  var d=$('#cd'),t=$('#ct'),c=$('#connst');
+  if(d)d.className='cd '+conn;
+  if(t)t.textContent=conn==='ok'?'':(conn==='off'?' Offline':' Reconnecting…');
+  if(c)c.textContent=connText();
+}
+function setConn(v){if(conn!==v){conn=v;paintConn()}}
+function verHTML(){return '<div class="ver">'+VER+'</div>'}
+function pingNow(){
+  if(isLocal||DEMO||!sess)return;
+  var t0=performance.now();
+  fetch('/api/ping',{cache:'no-store'}).then(function(r){return r.json()}).then(function(){rtt=Math.round(performance.now()-t0);paintConn()}).catch(function(){});
+}
+setInterval(function(){if(modal==='settings')pingNow()},5000);
+function onSnap(s){
+  if(!isLocal&&!sess)return;
+  if(!isLocal&&s.seq!=null&&s.seq<=seq)return;
+  if(s.seq!=null)seq=s.seq;
+  var mine=s.hand||[];
+  sel=sel.filter(function(c){return mine.indexOf(c)>=0});
+  var myTurn=(s.phase==='playing'&&s.turn===s.me)||(s.phase==='exchange'&&s.xchg&&s.xchg.mine&&!s.xchg.mine.submitted);
+  if(!myTurn)sel=[];
+  turnDeadline=s.turnLeft==null?null:Date.now()+s.turnLeft;
+  snap=s;
+  render();
+  if(modal==='chat')paintChat();
+}
+function roomGone(){
+  if(es){es.close();es=null}
+  stopPoll();sess=null;save('ah_sess',null);snap=null;modal=null;seq=-1;sel=[];
+  closeModal();toast('That table is no longer available');render();
+}
+function resync(){
+  if(!sess||isLocal||syncing)return;
+  syncing=true;
+  fetch('/api/state?code='+sess.code+'&token='+sess.token,{cache:'no-store'})
+    .then(function(r){return r.json().then(function(j){return{st:r.status,j:j}})})
+    .then(function(x){
+      syncing=false;
+      if(x.st===404){roomGone();return}
+      if(x.j&&x.j.s){setConn('ok');onSnap(x.j.s)}
+    }).catch(function(){syncing=false;setConn(navigator.onLine===false?'off':'wait')});
+}
+function startPoll(){if(!pollT)pollT=setInterval(resync,1500)}
+function stopPoll(){if(pollT){clearInterval(pollT);pollT=null}}
+function connect(){
+  if(es){try{es.close()}catch(e){}es=null}
+  if(!sess)return;
+  var my=es=new EventSource('/api/stream?code='+sess.code+'&token='+sess.token);
+  var alive=function(){if(es!==my)return false;failN=0;lastSse=Date.now();stopPoll();setConn('ok');return true};
+  my.onopen=alive;
+  my.onmessage=function(e){if(alive())onSnap(JSON.parse(e.data))};
+  my.addEventListener('hb',function(e){
+    if(!alive())return;
+    try{var d=JSON.parse(e.data);if(d.seq!=null&&d.seq>seq)resync()}catch(x){}
+  });
+  my.addEventListener('removed',function(){
+    if(es!==my)return;
+    my.close();es=null;stopPoll();sess=null;save('ah_sess',null);snap=null;seq=-1;sel=[];closeModal();toast('You were removed from the table');render();
+  });
+  my.onerror=function(){
+    if(es!==my)return;
+    failN++;setConn(navigator.onLine===false?'off':'wait');
+    if(my.readyState===2){es=null;resync()}
+    if(failN>=3)startPoll();
+  };
+}
+// the server sends a heartbeat every 10 s; silence for 25 s means the stream is dead
+setInterval(function(){
+  if(!sess||isLocal||!snap)return;
+  if(Date.now()-lastSse>25000){
+    setConn(navigator.onLine===false?'off':'wait');startPoll();
+    if(Date.now()-lastTry>10000){lastTry=Date.now();connect();resync()}
+  }
+},4000);
+function wake(){
+  if(!sess||isLocal)return;
+  resync();
+  if(!es||es.readyState!==1||Date.now()-lastSse>15000)connect();
+}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)wake()});
+window.addEventListener('online',function(){setConn('wait');wake()});
+window.addEventListener('offline',function(){setConn('off')});
+window.addEventListener('pageshow',function(e){if(e.persisted)wake()});
+function act(a){
+  if(isLocal){var r=game.act(me,a);if(r&&r.err)toast(r.err);return}
+  var mine=sess;
+  api('/api/act',{code:sess.code,token:sess.token,a:a}).then(function(r){
+    if(r&&r.err){
+      if(r.err==='Not your turn'||r.err==='Not now'){resync();return}
+      toast(r.err);return
+    }
+    if(sess!==mine)return;
+    if(r&&r.s){onSnap(r.s);if(modal==='settings')openModal('settings')}
+  }).catch(function(){toast('Connection problem');setTimeout(resync,800)});
+}
+function enter(r){sess={code:r.code,token:r.token};save('ah_sess',sess);me=r.pid;seq=-1;connect()}
+function readHome(){var n=$('#nm'),c=$('#rc'),r=$('#rl');if(n)hName=n.value;if(c)hCode=c.value.toUpperCase();if(r)hRoles=r.checked}
+function create(){
+  readHome();var n=hName.trim();
+  if(!n){errMsg='Enter your name to continue';render();return}
+  savedName=n;save('ah_name',n);
+  if(DEMO){startDemo(n);return}
+  if(busy)return;busy=true;
+  api('/api/create',{name:n,roles:hRoles}).then(function(r){busy=false;if(r.err){errMsg=r.err;render();return}errMsg='';enter(r)}).catch(function(){busy=false;errMsg='Could not reach the server';render()});
+}
+function join(){
+  readHome();var n=hName.trim(),c=hCode.trim().toUpperCase();
+  if(!n){errMsg='Enter your name to continue';render();return}
+  if(!c){errMsg='Enter a room code to join';render();return}
+  savedName=n;save('ah_name',n);
+  if(DEMO){errMsg='The demo has no live tables. Use Start a table.';render();return}
+  if(busy)return;busy=true;
+  api('/api/join',{code:c,name:n}).then(function(r){busy=false;if(r.err){errMsg=r.err;render();return}errMsg='';enter(r)}).catch(function(){busy=false;errMsg='Could not reach the server';render()});
+}
+/* demo: the whole game runs in this page against bots */
+function startDemo(n){
+  isLocal=true;game=new E.Game('DEMO');game.autoMs=700;
+  var r=game.addHuman(n,'demo');me=r.pid;game.size=5;
+  if(hRoles)game.act(me,{type:'roles',on:true});
+  game.onChange=function(){
+    game.humans().forEach(function(p){p.connected=true});
+    game.schedule();
+    onSnap(game.snapshot(me));
+  };
+  game.onChange();
+}
+function leave(){
+  if(DEMO){location.reload();return}
+  if(isLocal){game.destroy();game=null;isLocal=false}
+  else{act({type:'leave'});if(es){es.close();es=null}stopPoll();sess=null;seq=-1;save('ah_sess',null)}
+  snap=null;sel=[];closeModal();render();
+}
+function tryRejoin(){
+  if(!sess)return;
+  api('/api/rejoin',sess).then(function(r){if(r.err){sess=null;save('ah_sess',null);render();return}me=r.pid;connect()}).catch(function(){});
+}
+
+/* ---------- helpers ---------- */
+function player(id){return snap.players.filter(function(p){return p.id===id})[0]}
+function nameOf(id){var p=player(id);return p?p.name:'?'}
+function isRed(c){var s=E.suitOf(c);return s==='H'||s==='D'}
+function amHost(){return snap&&snap.host===snap.me}
+function lastChatId(){return snap&&snap.chat&&snap.chat.length?snap.chat[snap.chat.length-1].id:0}
+function plural(n,w){return n+' '+w+(n===1?'':'s')}
+
+function cardHTML(c,o){
+  o=o||{};
+  var r=E.rankLabel(E.rankOf(c)),s=SY[E.suitOf(c)];
+  var cls='cd2'+(isRed(c)?' rd':'')+(o.sel?' sel':'')+(o.dim?' dim':'')+(o.lg?' lg':'');
+  var inner='<span class="r">'+r+'</span><span class="s">'+s+'</span><span class="bg">'+s+'</span>';
+  var st=o.ml!=null?' style="margin-left:'+o.ml+'px"':'';
+  if(o.btn)return '<button class="'+cls+'" data-a="card" data-c="'+c+'"'+st+' aria-pressed="'+(o.sel?'true':'false')+'" aria-label="'+r+' of '+E.SUIT_NAME[E.suitOf(c)]+'">'+inner+'</button>';
+  return '<span class="'+cls+'"'+st+' role="img" aria-label="'+r+' of '+E.SUIT_NAME[E.suitOf(c)]+'">'+inner+'</span>';
+}
+
+/* org chart. tiers: [{k:'pres'|'vp'|'cit'|'va'|'ass', nodes:[{t,n,me}]}] */
+function bus(k,dir){
+  var h='<div class="lk" style="--h:14px">',i;
+  if(k>1){
+    h+='<i class="h" style="'+(dir==='in'?'bottom:0':'top:0')+';left:'+(50/k)+'%;right:'+(50/k)+'%"></i>';
+    for(i=0;i<k;i++)h+='<i style="left:calc('+((i+.5)*100/k)+'% - 1px);top:0;bottom:0"></i>';
+  }else h+='<i style="left:calc(50% - 1px);top:0;bottom:0"></i>';
+  return h+'</div>';
+}
+function chartHTML(tiers){
+  var h='<div class="chart">';
+  tiers.forEach(function(t,ti){
+    if(ti){
+      var up=tiers[ti-1].nodes.length,dn=t.nodes.length;
+      h+=(up===1&&dn===1)?'<div class="lk" style="--h:16px"><i style="left:calc(50% - 1px);top:0;bottom:0"></i></div>':bus(up,'in')+bus(dn,'out');
+    }
+    var k=t.nodes.length;
+    h+='<div class="tier'+(k===1?' one':'')+'" style="--k:'+k+'">';
+    t.nodes.forEach(function(x){
+      h+='<div class="nd '+t.k+(x.me?' me':'')+'"><span class="t">'+esc(x.t)+'</span>'+(x.n!=null?'<span class="n">'+esc(x.n)+'</span>':'')+'</div>';
+    });
+    h+='</div>';
+  });
+  return h+'</div>';
+}
+function staticTiers(){
+  // the front page always shows the full hierarchy; in a game the chart follows the number of players
+  return [{k:'pres',nodes:[{t:'President'}]},{k:'vp',nodes:[{t:'Vice President'}]},
+    {k:'cit',nodes:[{t:'Citizen'},{t:'Citizen'},{t:'Citizen'}]},{k:'va',nodes:[{t:'Vice Asshole'}]},{k:'ass',nodes:[{t:'Asshole'}]}];
+}
+function namedTiers(order,meId){
+  var n=order.length,ts=E.titlesFor(n),tiers=[],map={president:'pres',vp:'vp',citizen:'cit',va:'va',asshole:'ass'};
+  order.forEach(function(pid,i){
+    var k=map[ts[i]],last=tiers[tiers.length-1],node={t:TITLE[ts[i]],n:nameOf(pid),me:pid===meId};
+    if(last&&last.k===k)last.nodes.push(node);else tiers.push({k:k,nodes:[node]});
+  });
+  return tiers;
+}
+
+/* ---------- screens ---------- */
+function homeHTML(){
+  return '<div class="head"><div><h1 class="lh">ASSHOLE</h1><div class="sub">The card game</div></div><div class="stamp" aria-hidden="true">Effective<br>immediately</div></div>'
+  +'<div class="memo"><div><b>TO:</b><span>Everyone at the table</span></div><div><b>FROM:</b><span>Management</span></div><div><b>RE:</b><span>Restructuring. Everyone gets a title.</span></div></div>'
+  +'<div class="mid" aria-hidden="true">'+chartHTML(staticTiers())+'<p class="cap" style="margin-top:8px">Fig. 1. Everyone reports upward.<br>The Asshole reports to everyone.</p></div>'
+  +'<div class="sec">'
+  +'<div class="cell"><label class="lbl" for="nm">Employee name</label><input id="nm" type="text" maxlength="16" autocomplete="off" autocapitalize="words" placeholder="Full name, for the directory" value="'+esc(hName)+'"></div>'
+  +'<button class="btn pri" data-a="create">Start a table</button>'
+  +'<div class="row"><input id="rc" class="code" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="CODE" aria-label="Room code" value="'+esc(hCode)+'"><button class="btn" style="flex:1" data-a="join">Join with a code</button></div>'
+  +'<label class="chk"><input type="checkbox" id="rl"'+(hRoles?' checked':'')+'><span>Start with roles (pick the titles to carry on a game)</span></label>'
+  +'<div class="err" role="alert">'+esc(errMsg)+'</div>'
+  +'<div style="display:flex;justify-content:center"><button class="link" data-a="rules">How to play</button></div></div>'
+  +verHTML();
+}
+
+function topBar(s){
+  var sub=s.phase==='lobby'?'Table '+s.code:'Game '+s.round;
+  var dot=sess&&!isLocal?' <span class="cd '+conn+'" id="cd" title="Connection"></span><span id="ct">'+(conn==='ok'?'':(conn==='off'?' Offline':' Reconnecting…'))+'</span>':'';
+  return '<div class="top"><div><div class="ttl">ASSHOLE</div><div class="rd">'+esc(sub)+dot+'</div></div><div style="display:flex;gap:8px"><button class="ib" data-a="rules" aria-label="How to play">?</button><button class="ib" data-a="settings" aria-label="Settings">Menu</button></div></div>';
+}
+
+function lobbyHTML(s){
+  var host=amHost(),h=topBar(s);
+  var link=location.origin&&location.origin!=='null'?location.origin+'/?r='+s.code:s.code;
+  h+='<button class="codebox" data-a="copy" aria-label="Room code '+s.code.split('').join(' ')+'. Tap to share the invite link"><div class="lbl">Room code, tap to share invite</div><div class="c">'+esc(s.code)+'</div></button>';
+  h+='<div class="sec"><div class="lbl">On the payroll ('+s.players.length+' of '+s.n+')</div>';
+  s.players.forEach(function(p){
+    h+='<div class="emp"><span class="nm">'+esc(p.name)+(p.id===s.me?' (you)':'')+'</span>';
+    if(p.id===s.host)h+='<span class="tg">Host</span>';
+    if(!p.connected)h+='<span class="tg">away</span>';
+    if(host&&s.rolesMode)h+='<select class="sel2" data-role="'+p.id+'" aria-label="Starting title for '+esc(p.name)+'">'+ROLE_OPTS.filter(function(o){return o[0]==='citizen'||s.rolesNeed.indexOf(o[0])>=0}).map(function(o){return '<option value="'+o[0]+'"'+((p.role||'citizen')===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select>';
+    else if(s.rolesMode&&p.role)h+='<span class="tg">'+TITLE[p.role]+'</span>';
+    if(host&&p.id!==s.me)h+='<button class="x" data-a="kick" data-p="'+p.id+'" aria-label="Remove '+esc(p.name)+'">×</button>';
+    h+='</div>';
+  });
+  for(var i=0;i<s.botCount;i++)h+='<div class="emp bot"><span class="nm">Bot, fills the seat</span><span class="tg">Temp</span></div>';
+  h+='</div>';
+  if(host){
+    h+='<div class="sec"><div class="lbl">Seats</div><div class="stepper"><button class="btn" data-a="size" data-d="-1" aria-label="Fewer seats">−</button><span class="v">'+s.n+'</span><button class="btn" data-a="size" data-d="1" aria-label="More seats">+</button><span class="note">'+(s.botCount?plural(s.botCount,'bot')+' will fill the rest':'no bots')+'</span></div></div>';
+    h+='<div class="sec"><label class="chk"><input type="checkbox" data-a="rolesmode"'+(s.rolesMode?' checked':'')+'><span>Start with roles. Choose the titles above; bots take any left over, and the card swap happens before the first game.</span></label>'
+      +(s.rolesMode?'<div class="note">'+(s.rolesNeed.length===4?'Titles in play: President, Vice President, Vice Asshole, Asshole.':'Pick the President and the Asshole. The vice titles only apply from 6 players.')+'</div>':'')+'</div>';
+    h+='<button class="btn pri" data-a="start">Start the game</button>';
+  }else{
+    h+='<div class="note">Waiting for the host to start. Share the room code so the rest can join.</div>';
+  }
+  return h;
+}
+
+// 1, 2, 3 … is the order of play this trick, starting with whoever leads it and going round the table past anyone who is out
+function orderNums(s){
+  var m={};
+  if(s.phase!=='playing')return m;
+  var lead=s.trick&&s.trick.lead!=null?s.trick.lead:s.turn;
+  var li=-1;s.players.forEach(function(p,i){if(p.id===lead)li=i});
+  if(li<0)return m;
+  var k=0;
+  for(var i=0;i<s.players.length;i++){var p=s.players[(li+i)%s.players.length];if(p.cards>0&&!p.out)m[p.id]=++k}
+  return m;
+}
+function stripHTML(s){
+  var c=Math.min(4,s.players.length);
+  var h='<div class="strip" style="--c:'+c+'">';
+  var num=orderNums(s),ts=E.titlesFor(s.n);
+  s.players.forEach(function(p){
+    var cls='pn'+(s.turn===p.id?' turn':'')+(p.out?' out':'')+(p.id===s.me?' me':'')+(!p.connected&&!p.bot?' away':'');
+    // someone who is out already holds this round's title for their finishing place; the rest show last round's
+    var title=p.out?TITLE[ts[p.out-1]]:(p.title?TITLE[p.title]:'');
+    var info=(p.id===s.me?'you · ':'')+(p.out?('out #'+p.out):(p.cards+(p.cards===1?' card':' cards')+(!p.connected&&!p.bot?' · away':'')));
+    h+='<div class="'+cls+'">'+(num[p.id]?'<span class="no" title="Order of play">'+num[p.id]+'</span>':'')+(p.passed&&!p.out?'<span class="ps">Pass</span>':'')+'<div class="pt">'+esc(title)+'</div><div class="pnm">'+esc(p.name)+'</div><div class="pc">'+info+'</div></div>';
+  });
+  return h+'</div>';
+}
+
+// The plays of this trick stacked like a pile: the latest on top, the ones before it peeking out underneath
+var PILE_X=[0,-42,40,-76,74],PILE_Y=[0,-11,-8,-20,-17],PILE_R=[0,-6,5,-10,8];
+function pileHTML(plays,fresh){
+  var vis=plays.slice(-5),n=vis.length,h='<div class="pile">';
+  vis.forEach(function(pl,i){
+    var d=n-1-i;
+    h+='<div class="pl'+(d===0&&fresh?' drop':'')+(d?' old':'')+'" style="z-index:'+(i+1)+';transform:translate(calc(-50% + '+PILE_X[d]+'px),'+PILE_Y[d]+'px) rotate('+PILE_R[d]+'deg)">'
+      +pl.cards.map(function(c){return cardHTML(c,{lg:1})}).join('')+'</div>';
+  });
+  return h+'</div>';
+}
+function tableHTML(s){
+  var h='<div class="table" aria-live="polite">';
+  var tr=s.trick;
+  if(tr&&tr.plays.length){
+    var last=tr.plays[tr.plays.length-1],prev=tr.plays.length>1?tr.plays[tr.plays.length-2]:null;
+    var key=s.round+':'+tr.plays.length+':'+last.pid;
+    var fresh=key!==lastAnim;lastAnim=key;
+    if(s.phase==='trickdone'){
+      h+='<span class="takes">'+(s.roundEnds?'Game over':esc(nameOf(s.trickWinner))+' wins the round')+'</span>';
+    }
+    h+=pileHTML(tr.plays,fresh);
+    h+='<div class="who">'+esc(nameOf(last.pid))+(last.pid===s.me?' (you)':'')+' played '+plural(last.cards.length,'card')+'</div>';
+    if(s.phase==='playing'&&s.turn===s.me)h+='<div class="hint">'+(tr.rank===E.TWO?'Put '+plural(tr.count,'2')+' on top of it, or pass.':'Beat it with '+plural(tr.count,'card')+' higher than '+E.rankLabel(tr.rank)+', or pass.')+'</div>';
+    else if(s.phase==='playing')h+='<div class="hint">Next up: '+esc(nameOf(s.turn))+'</div>';
+  }else{
+    lastAnim='';
+    var lead=s.turn!=null?nameOf(s.turn):'';
+    h+='<div class="big">'+(s.turn===s.me?'You lead':esc(lead)+' leads')+'</div><div class="hint">'+(s.turn===s.me?'Play one card, or a set of the same rank.':'Nothing on the table yet.')+'</div>';
+  }
+  return h+'</div>';
+}
+
+function trickReq(s){return s.trick?{count:s.trick.count,rank:s.trick.rank}:null}
+// the card swap: can this card go in the pile I hand over? (the server checks again; this only guides the tap)
+function swapMine(s){var m=s.xchg&&s.phase==='exchange'?s.xchg.mine:null;return m&&!m.submitted?m:null}
+function swapAllowed(s,m,c){
+  var rs=s.hand.map(E.rankOf).sort(function(a,b){return m.mode==='best'?b-a:a-b}),edge=rs[Math.min(m.k,rs.length)-1],r=E.rankOf(c);
+  return m.mode==='best'?r>=edge:r<=edge;
+}
+function canUse(s,c){
+  if(s.phase==='exchange'){var m=swapMine(s);return !!m&&swapAllowed(s,m,c)}
+  if(s.phase!=='playing'||s.turn!==s.me)return false;
+  var tr=trickReq(s);if(!tr)return true;
+  var r=E.rankOf(c);if(r<=tr.rank&&!(r===E.TWO&&tr.rank===E.TWO))return false;
+  return s.hand.filter(function(x){return E.rankOf(x)===r}).length>=tr.count;
+}
+function tapCard(c){
+  var s=snap;if(!s||!canUse(s,c))return;
+  var i=sel.indexOf(c);
+  if(s.phase==='exchange'){
+    var m=swapMine(s);if(!m)return;
+    if(i>=0)sel.splice(i,1);else if(sel.length<m.k)sel.push(c);else{sel.shift();sel.push(c)}
+    render();return;
+  }
+  var tr=trickReq(s),r=E.rankOf(c);
+  if(i>=0){sel=tr&&tr.count>1?[]:sel.filter(function(x){return x!==c})}
+  else{
+    if(sel.length&&E.rankOf(sel[0])!==r)sel=[];
+    if(tr&&tr.count>1){
+      var same=s.hand.filter(function(x){return E.rankOf(x)===r&&x!==c});
+      sel=[c].concat(same).slice(0,tr.count);
+    }else if(tr)sel=[c];
+    else sel.push(c);
+  }
+  render();
+}
+
+function gameHTML(s){
+  var h=topBar(s)+stripHTML(s)+tableHTML(s);
+  var last=s.chat.length?s.chat[s.chat.length-1]:null,unread=last&&last.id>chatSeen;
+  h+='<button class="chatstrip" data-a="chat" aria-label="Open chat">'+(unread?'<span class="dot"></span>':'')+(last?(last.sys?'<span><i>'+esc(last.text)+'</i></span>':'<span><b>'+esc(last.name)+':</b> '+esc(last.text)+'</span>'):'<span style="color:var(--gray)">Say something to the table…</span>')+'</button>';
+  var myTurn=s.phase==='playing'&&s.turn===s.me;
+  var st;
+  if(myTurn)st='Your turn'+(turnDeadline?' <small id="tm"></small>':'');
+  else if(s.phase==='playing')st='<small>Waiting for '+esc(nameOf(s.turn))+(turnDeadline?' <span id="tm"></span>':'')+'</small>';
+  else st='<small>&nbsp;</small>';
+  var meP=player(s.me);
+  if(meP&&meP.out)st='You are out: '+TITLE[E.titlesFor(s.n)[meP.out-1]]+' <small>watch the rest play</small>';
+  h+='<div class="status">'+st+'</div>';
+  h+=handHTML(s,{btn:1,dimOn:myTurn});
+  var bad=sel.length?E.playError(sel,trickReq(s)):'x';
+  h+='<div class="acts">'+(s.trick?'<button class="btn" data-a="pass"'+(myTurn?'':' disabled')+'>Pass</button>':'')+'<button class="btn pri" data-a="play"'+(myTurn&&!bad?'':' disabled')+'>'+(sel.length?'Play '+sel.map(E.cardLabel).join(' '):'Play')+'</button></div>';
+  return h;
+}
+
+/* The hand is laid out in code so it can never run past the screen: cards shrink to fit, and the overlap
+   and the number of rows are worked out from the width actually available. */
+function availW(){
+  var a=$('#app');if(!a)return 320;
+  var cs=getComputedStyle(a);
+  return Math.max(200,Math.floor(a.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))-2);
+}
+function handLayout(n){
+  var W=availW(),short=window.innerHeight<720;
+  var cw=Math.max(44,Math.min(short?52:62,Math.floor(W/5.6))),ch=Math.round(cw*1.435);
+  var minStep=Math.max(26,Math.round(cw*.5));
+  var perRow=Math.max(1,Math.floor((W-cw)/minStep)+1);
+  var rows=Math.ceil(n/perRow),per=Math.ceil(n/rows);
+  var step=per>1?Math.min(Math.round(cw*.78),Math.floor((W-cw)/(per-1))):0;
+  return{cw:cw,ch:ch,rows:rows,per:per,step:step};
+}
+function handHTML(s,o){
+  var hand=s.hand,n=hand.length;
+  if(!n)return '<div class="hand"></div>';
+  var L=handLayout(n);
+  var h='<div class="hand" role="group" aria-label="Your hand" style="--cw:'+L.cw+'px;--ch:'+L.ch+'px">';
+  for(var r=0;r<L.rows;r++){
+    var part=hand.slice(r*L.per,(r+1)*L.per);
+    h+='<div class="hr" style="margin-top:'+(r?(L.rows>2?-Math.round(L.ch*.34):6):0)+'px">';
+    part.forEach(function(c,i){
+      var on=o.btn&&canUse(s,c);
+      h+=cardHTML(c,{btn:!!o.btn,sel:sel.indexOf(c)>=0,dim:!!o.btn&&!!o.dimOn&&!on,ml:i?-(L.cw-L.step):0});
+    });
+    h+='</div>';
+  }
+  return h+'</div>';
+}
+
+/* the card swap screen */
+function slotsHTML(cards,k,mark){
+  var h='<div class="slots">';
+  for(var i=0;i<k;i++)h+=cards&&cards[i]?cardHTML(cards[i]):'<span class="slot" aria-hidden="true">'+(mark||'')+'</span>';
+  return h+'</div>';
+}
+function swapLine(pr,s){
+  var hi=player(pr.hi),lo=player(pr.lo);
+  var st=pr.done?'Swapped':(pr.hiDone&&pr.loDone?'Swapping':(pr.hiDone||pr.loDone?'One side is in':'Choosing'));
+  return '<div class="xp"><div><b>'+esc(hi.name)+'</b> <span class="tg">'+TITLE[hi.title||'president']+'</span></div><div class="xs">swaps '+plural(pr.k,'card')+' with</div><div><b>'+esc(lo.name)+'</b> <span class="tg">'+TITLE[lo.title||'asshole']+'</span></div><div class="xst'+(pr.done?' ok':'')+'">'+st+'</div></div>';
+}
+function exchangeHTML(s){
+  var x=s.xchg,m=x.mine,h=topBar(s)+'<div class="h2">Card swap</div>';
+  var open=swapMine(s);
+  if(m){
+    var other=player(m.other),me=player(s.me);
+    var my=TITLE[me.title||(m.side==='hi'?'president':'asshole')];
+    if(m.done)h+='<p class="note"><b>'+esc(my)+'.</b> Swap done with '+esc(other.name)+'. This is what changed hands.</p>';
+    else if(m.side==='lo')h+='<p class="note"><b>'+esc(my)+'.</b> Your '+(m.k===1?'best card goes':m.k+' best cards go')+' to '+esc(other.name)+', who hands you '+(m.k===1?'their lowest card':'their '+m.k+' lowest')+'.</p>';
+    else h+='<p class="note"><b>'+esc(my)+'.</b> You get '+esc(other.name)+'’s '+(m.k===1?'best card':m.k+' best cards')+' and hand down '+(m.k===1?'your lowest card':'your '+m.k+' lowest')+'.</p>';
+    var giving=m.gave||sel;
+    h+='<div class="xbox"><div class="lbl">You give</div>'+slotsHTML(giving,m.k,'?')+'<div class="lbl" style="margin-top:10px">You get from '+esc(other.name)+'</div>'+slotsHTML(m.got,m.k,'?')+'</div>';
+    var err=open&&sel.length===m.k?E.exchangeError(s.hand,sel,m.k,m.mode):null;
+    if(open)h+='<div class="'+(err?'err':'status')+'" role="alert">'+(err?esc(err):(sel.length===m.k?'Looks right. Confirm to swap.':'Pick '+plural(m.k,'card')+' ('+sel.length+' picked)'+(turnDeadline?' <small id="tm"></small>':'')))+'</div>';
+    else if(!m.done)h+='<div class="status"><small>Waiting for '+esc(other.name)+' to choose'+(turnDeadline?' <span id="tm"></span>':'')+'</small></div>';
+    if(x.pairs.length>1){h+='<div class="lbl">All swaps this game</div>'+x.pairs.map(function(p){return swapLine(p,s)}).join('')}
+  }else{
+    h+='<p class="note">'+(x.done?'The swap is done.':'The top and bottom of the table are swapping cards. You keep your hand; their cards stay hidden.')+'</p>'+x.pairs.map(function(p){return swapLine(p,s)}).join('');
+    if(!x.done&&turnDeadline)h+='<div class="status"><small>Auto-swap in <span id="tm"></span></small></div>';
+  }
+  h+=handHTML(s,{btn:!!open,dimOn:!!open});
+  if(x.done)h+='<div class="acts"><button class="btn pri" data-a="go">Start playing</button></div>';
+  else if(open)h+='<div class="acts"><button class="btn pri" data-a="give"'+(sel.length===m.k&&!E.exchangeError(s.hand,sel,m.k,m.mode)?'':' disabled')+'>Confirm swap</button></div>';
+  return h;
+}
+
+function roundHTML(s){
+  var host=amHost(),over=s.phase==='gameover';
+  var h=topBar(s);
+  if(over){
+    var v=s.verdict||{asshole:[],president:[]};
+    var names=function(ids){return ids.map(nameOf).join(' & ')};
+    h+='<div class="verdict"><div class="lbl">Final memo</div><div>Asshole of the night</div><div class="big">'+esc(names(v.asshole)||'Nobody')+'</div>'
+      +(v.president.length&&v.president.length<s.players.length?'<div class="note">Most Presidencies: '+esc(names(v.president))+'</div>':'')+'</div>';
+  }else{
+    h+='<div class="h2">Memo: restructuring</div><p class="note">Game '+s.round+' is done. New titles, effective immediately.</p>';
+  }
+  if(s.order)h+=chartHTML(namedTiers(s.order,s.me));
+  h+='<table class="tl"><thead><tr><th>Name</th><th>Pres</th><th>Ass</th><th>Games</th></tr></thead><tbody>'
+    +s.players.slice().sort(function(a,b){return b.tally.president-a.tally.president||a.tally.asshole-b.tally.asshole}).map(function(p){return '<tr><td>'+esc(p.name)+'</td><td>'+p.tally.president+'</td><td>'+p.tally.asshole+'</td><td>'+p.tally.rounds+'</td></tr>'}).join('')+'</tbody></table>';
+  if(over){
+    h+=host?'<button class="btn pri" data-a="again">Back to the lobby</button>':'<div class="note">Waiting for the host to reset the table.</div>';
+    h+='<button class="btn" data-a="leave">Leave table</button>';
+  }else{
+    h+='<button class="btn pri" data-a="next">Deal game '+(s.round+1)+'</button>';
+    if(host)h+='<button class="btn" data-a="finish">End the night</button>';
+  }
+  return h;
+}
+
+function render(){
+  var a=$('#app');
+  if(!a)return;
+  var st=a.scrollTop;
+  if(!snap)a.innerHTML=homeHTML();
+  else if(snap.phase==='lobby')a.innerHTML=lobbyHTML(snap);
+  else if(snap.phase==='roundover'||snap.phase==='gameover')a.innerHTML=roundHTML(snap);
+  else if(snap.phase==='exchange'||snap.phase==='xdone')a.innerHTML=exchangeHTML(snap);
+  else a.innerHTML=gameHTML(snap);
+  paintConn();paintTimer();
+}
+function paintTimer(){
+  var el=$('#tm');if(!el||turnDeadline==null)return;
+  var s=Math.max(0,Math.ceil((turnDeadline-Date.now())/1000));
+  el.textContent=Math.floor(s/60)+':'+('0'+s%60).slice(-2);
+}
+setInterval(paintTimer,500);
+
+/* ---------- modals ---------- */
+function openModal(kind){
+  modal=kind;var m=$('#modal'),h='';
+  if(kind==='rules'){
+    h='<div class="sheet" role="dialog" aria-label="How to play"><div class="hd"><div class="h2">How to play</div><button class="ib" data-a="close" aria-label="Close">×</button></div>'
+    +'<ul class="rules"><li>3 to 8 players, bots fill empty seats. Everyone is dealt the whole deck. The 2 is the highest card, then Ace, King down to 3.</li>'
+    +'<li>A game is one deal, played until only one player still has cards. Inside a game you play rounds: one player leads, the others beat it or pass, and whoever is left wins the round and leads the next one.</li>'
+    +'<li>The 3 of clubs starts the first game. Lead one card or a set of the same rank (pairs, three, four).</li>'
+    +'<li>Each player then beats it with the same number of cards of a higher rank, or passes. When everyone else passes, the last to play wins the round and leads.</li>'
+    +'<li>A 2 is the highest card, but it does not win the round by itself: the next player can pass or put another 2 on top. The round is only won when everyone else passes.</li>'
+    +'<li>First out is President, last with cards is the Asshole, everyone in between is a Citizen. With 6 to 8 players the second out is Vice President and the second last is Vice Asshole.</li>'
+    +'<li>When someone goes out and wins the round, the next player along the table leads. Small numbers next to the names show the order of play.</li>'
+    +'<li>Before the next game there is a card swap. The Asshole hands the President their best cards and the President hands down their lowest: 2 cards each with 4 or 5 players, 1 with 3 players. From 6 players it is 3 cards for the President and Asshole, and the Vice Asshole and Vice President swap 2. You pick the cards yourself; the game only accepts the right ones. Everyone else watches the swap.</li>'
+    +'<li>The Asshole leads the next game. Host: tick “Start with roles” in the lobby to carry on a game with the titles you pick.</li></ul></div>';
+  }else if(kind==='settings'&&snap){
+    var host=amHost();
+    h='<div class="sheet" role="dialog" aria-label="Settings"><div class="hd"><div class="h2">Settings</div><button class="ib" data-a="close" aria-label="Close">×</button></div>'
+    +'<div class="cell"><label class="lbl" for="rn">Your name</label><input id="rn" maxlength="16" value="'+esc(player(snap.me).name)+'"></div><button class="btn" data-a="rename">Save name</button>'
+    +'<div class="sec"><div class="lbl">Theme</div><div class="chips">'+THEMES.map(function(t){return '<button class="chip'+(ui.theme===t[0]?' on':'')+'" data-a="theme" data-v="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div></div>'
+    +'<div class="sec"><div class="lbl">Text size</div><div class="chips">'+SIZES.map(function(x,i){return '<button class="chip'+(ui.fs===i?' on':'')+'" data-a="fs" data-i="'+i+'">'+x+'</button>'}).join('')+'</div></div>';
+    if(host){
+      h+='<div class="sec"><div class="lbl">Bot level</div><div class="chips">'+LEVELS.map(function(l){return '<button class="chip'+(snap.botLevel===l[0]?' on':'')+'" data-a="level" data-v="'+l[0]+'">'+l[1]+'</button>'}).join('')+'</div></div>'
+      +'<div class="sec"><div class="lbl">Turn timer</div><div class="chips">'+TIMERS.map(function(t){return '<button class="chip'+(snap.timerSec===t?' on':'')+'" data-a="timer" data-v="'+t+'">'+timerLabel(t)+'</button>'}).join('')+'</div></div>';
+    }
+    h+='<div class="note" id="connst">'+esc(connText())+'</div>';
+    if(host&&snap.phase!=='lobby')h+='<div class="sec"><div class="lbl">Remove a player (a bot takes the seat)</div><div class="chips">'+snap.players.filter(function(p){return !p.bot&&p.id!==snap.me}).map(function(p){return '<button class="chip" data-a="kick" data-p="'+p.id+'">'+esc(p.name)+'</button>'}).join('')+'</div></div>';
+    h+='<button class="btn" style="color:var(--rust);border-color:var(--rust)" data-a="leave">Leave table</button></div>';
+    pingNow();
+  }else if(kind==='chat'&&snap){
+    chatSeen=lastChatId();
+    h='<div class="sheet" role="dialog" aria-label="Chat"><div class="hd"><div class="h2">Table talk</div><button class="ib" data-a="close" aria-label="Close">×</button></div><div class="log" id="log"></div>'
+    +'<div class="chin"><input id="ci" maxlength="160" placeholder="Say something" autocomplete="off"><button class="btn dk" style="height:48px" data-a="send">Send</button></div></div>';
+  }
+  m.innerHTML=h;m.classList.add('on');
+  if(kind==='chat'){paintChat()}
+}
+function paintChat(){
+  var l=$('#log');if(!l||!snap)return;
+  var near=l.scrollHeight-l.scrollTop-l.clientHeight<40;
+  l.innerHTML=snap.chat.map(function(m){return m.sys?'<div class="m sys">'+esc(m.text)+'</div>':'<div class="m"><b>'+esc(m.name)+':</b> '+esc(m.text)+'</div>'}).join('')||'<div class="note">No messages yet.</div>';
+  if(near||true)l.scrollTop=l.scrollHeight;
+  chatSeen=lastChatId();
+}
+function closeModal(){modal=null;var m=$('#modal');m.classList.remove('on');m.innerHTML='';render()}
+$('#modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+/* ---------- events ---------- */
+function onAct(el){
+  var a=el.dataset.a;
+  switch(a){
+    case 'create':return create();
+    case 'join':return join();
+    case 'rules':return openModal('rules');
+    case 'settings':return openModal('settings');
+    case 'chat':return openModal('chat');
+    case 'close':return closeModal();
+    case 'card':return tapCard(el.dataset.c);
+    case 'play':if(sel.length){var c=sel.slice();sel=[];act({type:'play',cards:c});render()}return;
+    case 'pass':sel=[];return act({type:'pass'});
+    case 'give':var gm=swapMine(snap);if(gm&&sel.length===gm.k){var g=sel.slice();sel=[];act({type:'give',cards:g})}return;
+    case 'go':return act({type:'go'});
+    case 'start':return act({type:'start'});
+    case 'next':return act({type:'next'});
+    case 'finish':return act({type:'finish'});
+    case 'again':return act({type:'again'});
+    case 'size':return act({type:'size',size:snap.n+(+el.dataset.d)});
+    case 'kick':return act({type:'kick',pid:+el.dataset.p});
+    case 'level':return act({type:'level',level:el.dataset.v});
+    case 'timer':return act({type:'timer',sec:+el.dataset.v});
+    case 'fs':ui.fs=+el.dataset.i;applyUI();return openModal('settings');
+    case 'theme':ui.theme=el.dataset.v;applyUI();return openModal('settings');
+    case 'rename':var n=$('#rn').value;if(n.trim()){savedName=n.trim();save('ah_name',savedName);act({type:'rename',name:n})}return closeModal();
+    case 'send':var ci=$('#ci');if(ci&&ci.value.trim()){act({type:'chat',text:ci.value});ci.value='';ci.focus()}return;
+    case 'leave':return leave();
+    case 'copy':
+      var link=location.origin+'/?r='+snap.code,code=snap.code;
+      var copy=function(){
+        if(navigator.clipboard&&navigator.clipboard.writeText&&location.protocol!=='file:')navigator.clipboard.writeText(link).then(function(){toast('Invite link copied')},function(){toast('Room code: '+code)});
+        else toast('Room code: '+code);
+      };
+      // the phone's own share sheet (WhatsApp, Messages…) when it has one; copying is the fallback
+      if(navigator.share&&location.protocol!=='file:'){
+        navigator.share({title:'Asshole',text:'Join my table. Room code '+code,url:link}).catch(function(e){if(!e||e.name!=='AbortError')copy()});
+      }else copy();
+      return;
+  }
+}
+document.addEventListener('click',function(e){var el=e.target.closest('[data-a]');if(el&&el.tagName!=='INPUT')onAct(el)});
+document.addEventListener('change',function(e){
+  var t=e.target;
+  if(t.dataset&&t.dataset.a==='rolesmode')return act({type:'roles',on:t.checked});
+  if(t.dataset&&t.dataset.role)return act({type:'setrole',pid:+t.dataset.role,role:t.value});
+  if(t.id==='rl')hRoles=t.checked;
+});
+document.addEventListener('input',function(e){var t=e.target;if(t.id==='nm')hName=t.value;if(t.id==='rc')hCode=t.value.toUpperCase()});
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  var t=e.target;
+  if(t.id==='nm')create();
+  else if(t.id==='rc')join();
+  else if(t.id==='ci')onAct({dataset:{a:'send'}});
+});
+
+// the hand is laid out from the width available, so redo it when the phone turns or the window changes
+var rzT=null;
+var lastAW=0;
+function relayout(){clearTimeout(rzT);rzT=setTimeout(function(){var w=availW();if(w!==lastAW){lastAW=w;if(snap)render()}},120)}
+window.addEventListener('resize',relayout);
+window.addEventListener('orientationchange',relayout);
+if(window.ResizeObserver)new ResizeObserver(relayout).observe(document.body);
+applyUI();
+render();
+if(sess&&!DEMO)tryRejoin();
+window.__ah={snap:function(){return snap},game:function(){return game}};
+})();
+</script>
+</body>
+</html>

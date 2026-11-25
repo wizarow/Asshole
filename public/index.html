@@ -39,7 +39,11 @@ input::placeholder{color:var(--gray)}
 .btn:active{transform:translateY(1px)}
 .btn[disabled]{opacity:.4;cursor:default}
 .pri{background:var(--or);color:var(--on-or);border-color:var(--ink);font-weight:800;font-size:1.1rem;letter-spacing:.01em}
-.pri:hover:not([disabled]){filter:brightness(1.05)}
+/* hover only where there is a mouse: on a phone the last button tapped would stay highlighted */
+@media (hover:hover){.pri:hover:not([disabled]){filter:brightness(1.05)}}
+/* long-press on buttons, cards and boxes must not select text or open a copy menu; typing and chat stay selectable */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,.log,.note{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 .dk{background:var(--ink);color:var(--lite)}
 .row{display:flex;gap:10px;align-items:stretch}
 .row .btn{white-space:nowrap;min-width:0}
@@ -153,9 +157,9 @@ button.cd2{padding:3px 4px}
 .emp .tg{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gray)}
 .emp.bot{border-style:dashed;background:var(--paper)}
 .sel2{height:44px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);padding:0 6px;font-size:16px;font-weight:700;max-width:160px;border-radius:0}
-.x{min-width:40px;height:40px;border:0;background:none;font-weight:800;font-size:1.1rem;color:var(--rust)}
+.x{min-width:44px;height:44px;border:0;background:none;font-weight:800;font-size:1.1rem;color:var(--rust)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{min-height:40px;padding:0 12px;border:2px solid var(--ink);background:transparent;font-weight:700;font-size:.85rem}
+.chip{min-height:44px;padding:0 12px;border:2px solid var(--ink);background:transparent;font-weight:700;font-size:.85rem}
 .chip.on{background:var(--ink);color:var(--lite)}
 .stepper{display:flex;align-items:center;gap:10px}
 .stepper .btn{height:44px;width:44px;padding:0;font-size:1.3rem}
@@ -454,7 +458,7 @@ function topBar(s){
 function lobbyHTML(s){
   var host=amHost(),h=topBar(s);
   var link=location.origin&&location.origin!=='null'?location.origin+'/?r='+s.code:s.code;
-  h+='<button class="codebox" data-a="copy" aria-label="Room code '+s.code.split('').join(' ')+'. Tap to copy the invite link"><div class="lbl">Room code, tap to copy invite</div><div class="c">'+esc(s.code)+'</div></button>';
+  h+='<button class="codebox" data-a="copy" aria-label="Room code '+s.code.split('').join(' ')+'. Tap to share the invite link"><div class="lbl">Room code, tap to share invite</div><div class="c">'+esc(s.code)+'</div></button>';
   h+='<div class="sec"><div class="lbl">On the payroll ('+s.players.length+' of '+s.n+')</div>';
   s.players.forEach(function(p){
     h+='<div class="emp"><span class="nm">'+esc(p.name)+(p.id===s.me?' (you)':'')+'</span>';
@@ -775,9 +779,15 @@ function onAct(el){
     case 'send':var ci=$('#ci');if(ci&&ci.value.trim()){act({type:'chat',text:ci.value});ci.value='';ci.focus()}return;
     case 'leave':return leave();
     case 'copy':
-      var link=location.origin+'/?r='+snap.code;
-      if(navigator.clipboard&&navigator.clipboard.writeText&&location.protocol!=='file:')navigator.clipboard.writeText(link).then(function(){toast('Invite link copied')},function(){toast('Room code: '+snap.code)});
-      else toast('Room code: '+snap.code);
+      var link=location.origin+'/?r='+snap.code,code=snap.code;
+      var copy=function(){
+        if(navigator.clipboard&&navigator.clipboard.writeText&&location.protocol!=='file:')navigator.clipboard.writeText(link).then(function(){toast('Invite link copied')},function(){toast('Room code: '+code)});
+        else toast('Room code: '+code);
+      };
+      // the phone's own share sheet (WhatsApp, Messages…) when it has one; copying is the fallback
+      if(navigator.share&&location.protocol!=='file:'){
+        navigator.share({title:'Asshole',text:'Join my table. Room code '+code,url:link}).catch(function(e){if(!e||e.name!=='AbortError')copy()});
+      }else copy();
       return;
   }
 }

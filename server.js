@@ -3,6 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { Game } = require('./public/engine.js');
 
 const PORT = process.env.PORT || 3000;
@@ -63,15 +64,40 @@ function readBody(req) {
   });
 }
 
+// The page and the engine are compressed once (brotli and gzip, built-in zlib) and kept in memory.
+// Browsers revalidate with the ETag, so a repeat visit is a tiny 304 until the files change.
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8' };
+const assets = new Map();   // file -> { mtime, etag, raw, gz, br }
+function loadAsset(f) {
+  const full = path.join(PUB, f);
+  let st;
+  try { st = fs.statSync(full); } catch (e) { return null; }
+  const have = assets.get(f);
+  if (have && have.mtime === st.mtimeMs) return have;
+  const raw = fs.readFileSync(full);
+  const a = {
+    mtime: st.mtimeMs, raw,
+    etag: '"' + crypto.createHash('sha1').update(raw).digest('hex').slice(0, 16) + '"',
+    gz: zlib.gzipSync(raw, { level: 9 }),
+    br: zlib.brotliCompressSync(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length } })
+  };
+  assets.set(f, a);
+  return a;
+}
 function serveStatic(req, res, url) {
   const f = url.pathname === '/' ? '/index.html' : url.pathname;
   if (f !== '/index.html' && f !== '/engine.js') { res.writeHead(404); return res.end('Not found'); }
-  fs.readFile(path.join(PUB, f), (err, buf) => {
-    if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)], 'Cache-Control': 'no-cache' });
-    res.end(buf);
-  });
+  const a = loadAsset(f);
+  if (!a) { res.writeHead(404); return res.end('Not found'); }
+  const headers = { 'Content-Type': MIME[path.extname(f)], 'Cache-Control': 'no-cache', 'ETag': a.etag, 'Vary': 'Accept-Encoding' };
+  if (req.headers['if-none-match'] === a.etag) { res.writeHead(304, headers); return res.end(); }
+  const accept = String(req.headers['accept-encoding'] || '');
+  let body = a.raw;
+  if (/\bbr\b/.test(accept)) { body = a.br; headers['Content-Encoding'] = 'br'; }
+  else if (/\bgzip\b/.test(accept)) { body = a.gz; headers['Content-Encoding'] = 'gzip'; }
+  headers['Content-Length'] = body.length;
+  res.writeHead(200, headers);
+  res.end(req.method === 'HEAD' ? undefined : body);
 }
 
 // A stray error in a timer must not take every room down with it.
@@ -153,7 +179,7 @@ const server = http.createServer(async (req, res) => {
         return send(res, 200, r);
       }
     }
-    if (req.method === 'GET') return serveStatic(req, res, url);
+    if (req.method === 'GET' || req.method === 'HEAD') return serveStatic(req, res, url);
     res.writeHead(404); res.end('Not found');
   } catch (e) {
     console.error(e);
@@ -180,5 +206,8 @@ setInterval(() => {
     if (g.closed || (idle && !live)) { g.destroy(); rooms.delete(code); streams.delete(code); }
   });
 }, 10 * 60 * 1000);
+
+// compress the two files now, not on the first visitor's request
+['/index.html', '/engine.js'].forEach(loadAsset);
 
 server.listen(PORT, () => console.log('Asshole listening on ' + PORT));
